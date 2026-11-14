@@ -11,7 +11,7 @@
 ## Spec cerrada
 
 - **Spec:** `docs/specs/002-vault-storage/spec.md` — formato binario y persistencia de bóveda.
-- **Cierre:** 2026-11-12; T01–T30 completadas; `./mvnw.cmd verify`: **BUILD SUCCESS**, 62 pruebas, 0 fallos, 1 omitida.
+- **Cierre:** 2026-11-12; T01–T30 completadas; `./mvnw.cmd verify`: **BUILD SUCCESS**, 63 pruebas, 0 fallos, 1 omitida.
 - **Estado:** cerrada con limitaciones de plataforma documentadas.
 - **Alcance acordado:** crear, abrir y guardar bóvedas; modelo mínimo `Entry`/`Vault` y operaciones por ID en sesión. Reglas de negocio, búsquedas y CLI quedan para specs posteriores.
 - **Plan técnico:** `docs/specs/002-vault-storage/plan.md`.
@@ -21,15 +21,17 @@
 
 - **Completadas:** T01–T30. Servicio create/open/save, sesión, persistencia
   atómica, detección de cambios externos, pruebas de límites y matrices adversariales.
-- **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 62 pruebas,
+- **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 63 pruebas,
   0 fallos y 1 omitida (Windows; symlink no disponible).
 - **Limitaciones de plataforma:** ejecución actual en Windows; ACL del usuario
   actual comprobada; escritura y reemplazo atómico real pasaron en el filesystem
   temporal de Windows. El fallo de atomic move se simuló con inyección y comprobó
   fail-closed, preservación del destino y limpieza temporal. POSIX 0600 requiere
-  CI POSIX. La prueba de symlinks se omitió mediante assumption porque Windows
-  devolvió `FileSystemException` al crearlos; ninguna de esas ramas se declara
-  ejecutada en esta plataforma.
+  la primera ejecución del workflow Linux `.github/workflows/verify.yml`. La prueba
+  de symlinks se omitió mediante assumption porque Windows devolvió
+  `FileSystemException` al crearlos; el job Linux exige que esa prueba se ejecute
+  y falle si no puede crear symlinks. Ninguna de esas ramas se declara ejecutada
+  hasta que el workflow termine en verde.
 - **Formato:** `docs/FORMAT.md` actualizado. El AAD son los primeros 34 bytes
   exactos del encabezado; nonce protegido por GCM y longitud validada
   estructuralmente, según la decisión aprobada en Spec 002.

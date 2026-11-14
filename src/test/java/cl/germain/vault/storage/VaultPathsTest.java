@@ -62,6 +62,9 @@ class VaultPathsTest {
         try {
             Files.createSymbolicLink(link, target);
         } catch (UnsupportedOperationException | SecurityException | IOException exception) {
+            if (System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("linux")) {
+                throw new AssertionError("Linux CI must support symbolic links", exception);
+            }
             assumeTrue(false, "Symbolic links are unavailable: " + exception.getClass().getSimpleName());
         }
     }

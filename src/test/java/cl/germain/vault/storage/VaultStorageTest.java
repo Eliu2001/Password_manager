@@ -9,6 +9,9 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,6 +29,21 @@ class VaultStorageTest {
             assertEquals(0, opened.vault().list().size());
         }
         assertThrows(java.nio.file.FileAlreadyExistsException.class, () -> storage.create(file, master));
+        java.util.Arrays.fill(master, '\0');
+    }
+
+    @Test void vaultLockAndSaveTemporaryArePrivateOnPosix() throws Exception {
+        Path file = directory.resolve("posix-permissions.dat");
+        char[] master = "synthetic test master".toCharArray();
+        VaultStorage storage = new VaultStorage(new cl.germain.vault.crypto.CryptoService(),
+                temp -> assertPosixPrivateIfAvailable(temp));
+        try (VaultSession session = storage.create(file, master)) {
+            assertPosixPrivateIfAvailable(file);
+            assertPosixPrivateIfAvailable(directory.resolve("posix-permissions.dat.lock"));
+            session.vault().add("service", "user", "secret".toCharArray(), "");
+            session.save();
+            assertPosixPrivateIfAvailable(file);
+        }
         java.util.Arrays.fill(master, '\0');
     }
 
@@ -201,6 +219,15 @@ class VaultStorageTest {
             PrivateFilePermissions.ensurePrivateFile(path);
         } finally {
             VaultStorage.clear(salt, aad, service, payload, nonce, ciphertext, header, file);
+        }
+    }
+
+    private static void assertPosixPrivateIfAvailable(Path path) throws IOException {
+        if (Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class)) {
+            assertEquals(Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
+                    Files.getPosixFilePermissions(path));
+        } else if (System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("linux")) {
+            fail("Linux test filesystem must expose POSIX permissions");
         }
     }
 }
