@@ -83,6 +83,23 @@
 - Spec 002 se cerró el 2026-11-12. POSIX 0600 y creación de symlinks quedan pendientes de CI/plataforma adecuada; no se marcaron como verificados.
 - En Spec 001, T01–T23 están completadas. El tiempo de derivación medido es puntual y dependiente del equipo; no es una prueba automática.
 
-## Siguiente paso
+## Siguiente paso al cierre de Spec 002
 
-- **Siguiente paso:** decidir el alcance de la próxima spec; el cierre no la inicia automáticamente.
+- **Siguiente paso en ese momento:** decidir el alcance de la próxima spec; el cierre no la iniciaba automáticamente. Spec 003 fue aprobada después y su estado se registra a continuación.
+
+## Spec 003 — cli-mvp
+
+- **Estado:** cerrada el 2026-11-14; T01–T26 completadas; AC-1–AC-13 cubiertos.
+- **Plan:** `docs/specs/003-cli-mvp/plan.md`.
+- **Tareas:** `docs/specs/003-cli-mvp/tasks.md`.
+- **Alcance implementado:** punto de entrada `cl.germain.vault.cli.Main`,
+  parser/ayuda y comandos interactivos `create`, `add`, `list`, `show` y
+  `delete`; consola obligatoria, sin fallback de secretos a stdin; persistencia
+  explícita para altas y borrados confirmados.
+- **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 77 pruebas,
+  0 fallos y 1 omitida.
+- **Limitación de plataforma:** ejecución en Windows; la prueba de symlink de
+  Storage permanece omitida por restricción de plataforma y requiere la
+  verificación del workflow Linux ya registrada en el progreso de Spec 002.
+- **Seguridad:** no se añadieron dependencias ni se modificaron el formato v1 o
+  `docs/THREAT_MODEL.md`; no se registraron secretos en salidas/errores.
