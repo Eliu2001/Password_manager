@@ -24,7 +24,15 @@ class CliArgumentParserTest {
                 parser.parse("show", "--vault", "safe.pvlt", "--id", "00112233445566778899aabbccddeeff").type());
         assertEquals(CliCommand.Type.DELETE,
                 parser.parse("delete", "--id", "00112233445566778899aabbccddeeff", "--vault", "safe.pvlt").type());
+        assertEquals(CliCommand.Type.GENERATE, parser.parse("generate").type());
+        assertEquals(CliCommand.DEFAULT_GENERATION_LENGTH, parser.parse("generate").generationLength());
         assertEquals(Path.of("safe.pvlt"), parser.parse("list", "--vault", "safe.pvlt").vaultPath());
+    }
+
+    @Test
+    void parsesGenerationLengthAtBothBounds() throws Exception {
+        assertEquals(12, parser.parse("generate", "--length", "12").generationLength());
+        assertEquals(128, parser.parse("generate", "--length", "128").generationLength());
     }
 
     @Test
@@ -42,6 +50,16 @@ class CliArgumentParserTest {
         assertInvalid("list", "--vault", "x", "--unknown");
         assertInvalid("--help", "list", "--vault", "x");
         assertInvalid("list", "--vault", "");
+        assertInvalid("generate", "--length", "11");
+        assertInvalid("generate", "--length", "129");
+        assertInvalid("generate", "--length", "twelve");
+        assertInvalid("generate", "--length", "+12");
+        assertInvalid("generate", "--length", "999999999999999999999999");
+        assertInvalid("generate", "--length");
+        assertInvalid("generate", "--length", "12", "--length", "20");
+        assertInvalid("generate", "--vault", "vault.pvlt");
+        assertInvalid("generate", "--id", "00112233445566778899aabbccddeeff");
+        assertInvalid("list", "--vault", "x", "--length", "20");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package cl.germain.vault.cli;
 
 import cl.germain.vault.crypto.DecryptionException;
+import cl.germain.vault.generator.PasswordGenerator;
 import cl.germain.vault.model.Entry;
 import cl.germain.vault.model.Vault;
 import cl.germain.vault.storage.VaultSession;
@@ -11,16 +12,27 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.IntFunction;
 
 /** Interactive command implementations backed by encrypted vault storage. */
 public final class VaultCliCommands implements CliCommandHandler {
     private static final String CANCELLED = "Operación cancelada.";
     private final CliConsole console;
     private final VaultStorage storage;
+    private final IntFunction<char[]> passwordGenerator;
 
     public VaultCliCommands(CliConsole console, VaultStorage storage) {
+        this(console, storage, new PasswordGenerator());
+    }
+
+    public VaultCliCommands(CliConsole console, VaultStorage storage, PasswordGenerator passwordGenerator) {
+        this(console, storage, Objects.requireNonNull(passwordGenerator)::generate);
+    }
+
+    VaultCliCommands(CliConsole console, VaultStorage storage, IntFunction<char[]> passwordGenerator) {
         this.console = Objects.requireNonNull(console);
         this.storage = Objects.requireNonNull(storage);
+        this.passwordGenerator = Objects.requireNonNull(passwordGenerator);
     }
 
     @Override
@@ -31,8 +43,21 @@ public final class VaultCliCommands implements CliCommandHandler {
             case LIST -> list(command);
             case SHOW -> show(command);
             case DELETE -> delete(command);
+            case GENERATE -> generate(command);
             case HELP -> CliExitStatus.SUCCESS;
         };
+    }
+
+    private CliExitStatus generate(CliCommand command) throws IOException {
+        char[] password = null;
+        try {
+            password = passwordGenerator.apply(command.generationLength());
+            console.printSecret(password);
+            console.printOutput("Contraseña generada.");
+            return CliExitStatus.SUCCESS;
+        } finally {
+            clear(password);
+        }
     }
 
     private CliExitStatus create(CliCommand command) throws IOException, InterruptedException {

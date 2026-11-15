@@ -11,8 +11,9 @@ public final class CliApplication {
             + "  Main list --vault <ruta>\n"
             + "  Main show --vault <ruta> --id <id>\n"
             + "  Main delete --vault <ruta> --id <id>\n"
+            + "  Main generate [--length <n>] (predeterminado: 20; rango: 12–128)\n"
             + "  Main --help\n"
-            + "Comandos: create, add, list, show, delete";
+            + "Comandos: create, add, list, show, delete, generate";
     private static final String CONSOLE_REQUIRED = "Se necesita una terminal interactiva para usar este comando.";
     private static final String INPUT_CANCELLED = "Operación cancelada o lectura interrumpida.";
     private final CliArgumentParser parser;

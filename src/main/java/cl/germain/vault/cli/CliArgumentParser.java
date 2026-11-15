@@ -1,5 +1,6 @@
 package cl.germain.vault.cli;
 
+import cl.germain.vault.generator.PasswordGenerator;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.HexFormat;
@@ -22,8 +23,10 @@ public final class CliArgumentParser {
         CliCommand.Type type = commandType(arguments[0]);
         String vaultValue = null;
         String idValue = null;
+        int generationLength = CliCommand.DEFAULT_GENERATION_LENGTH;
         boolean sawVault = false;
         boolean sawId = false;
+        boolean sawLength = false;
 
         for (int index = 1; index < arguments.length; index++) {
             String option = arguments[index];
@@ -39,13 +42,26 @@ public final class CliArgumentParser {
                 }
                 sawId = true;
                 idValue = arguments[++index];
+            } else if ("--length".equals(option)) {
+                if (sawLength || index + 1 >= arguments.length || isOption(arguments[index + 1])) {
+                    throw usageError();
+                }
+                sawLength = true;
+                generationLength = parseGenerationLength(arguments[++index]);
             } else {
                 throw usageError();
             }
         }
 
+        if (type == CliCommand.Type.GENERATE) {
+            if (sawVault || sawId) {
+                throw usageError();
+            }
+            return new CliCommand(type, null, null, generationLength);
+        }
+
         boolean needsId = type == CliCommand.Type.SHOW || type == CliCommand.Type.DELETE;
-        if (!sawVault || sawId != needsId) {
+        if (!sawVault || sawId != needsId || sawLength) {
             throw usageError();
         }
 
@@ -90,8 +106,29 @@ public final class CliArgumentParser {
             case "list" -> CliCommand.Type.LIST;
             case "show" -> CliCommand.Type.SHOW;
             case "delete" -> CliCommand.Type.DELETE;
+            case "generate" -> CliCommand.Type.GENERATE;
             default -> throw usageError();
         };
+    }
+
+    private static int parseGenerationLength(String value) throws CliArgumentException {
+        if (value == null || value.isEmpty()) {
+            throw usageError();
+        }
+        for (int index = 0; index < value.length(); index++) {
+            if (value.charAt(index) < '0' || value.charAt(index) > '9') {
+                throw usageError();
+            }
+        }
+        try {
+            int length = Integer.parseInt(value);
+            if (length < PasswordGenerator.MIN_LENGTH || length > PasswordGenerator.MAX_LENGTH) {
+                throw usageError();
+            }
+            return length;
+        } catch (NumberFormatException exception) {
+            throw usageError();
+        }
     }
 
     private static boolean isOption(String value) {

@@ -2,6 +2,7 @@ package cl.germain.vault.cli;
 
 import cl.germain.vault.storage.VaultSession;
 import cl.germain.vault.storage.VaultStorage;
+import cl.germain.vault.generator.PasswordGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,13 +32,82 @@ class CliApplicationTest {
     void helpAndInvalidArgumentsDoNotRequireConsoleOrTouchStorage() {
         ScriptedConsole noConsole = new ScriptedConsole(false);
         assertEquals(0, app(noConsole).run("--help"));
-        assertTrue(noConsole.outputs.getFirst().contains("create, add, list, show, delete"));
+        assertTrue(noConsole.outputs.getFirst().contains("create, add, list, show, delete, generate"));
+        assertTrue(noConsole.outputs.getFirst().contains("generate [--length <n>]"));
+        assertTrue(noConsole.outputs.getFirst().contains("predeterminado: 20; rango: 12–128"));
         assertEquals(0, noConsole.readCalls);
 
         ScriptedConsole available = new ScriptedConsole(true);
         assertEquals(1, app(available).run("list", "--vault"));
         assertTrue(available.errors.getFirst().contains("Argumentos inválidos"));
         assertEquals(0, available.availabilityChecks);
+    }
+
+    @Test
+    void generateUsesInteractiveGateAndPrivateChannelWithoutVaultAccess() {
+        ScriptedConsole console = new ScriptedConsole(true);
+        assertEquals(0, app(console).run("generate"));
+        assertEquals(1, console.secretWrites);
+        assertEquals(20, console.revealedSecret.length);
+        assertCleared(console.lastSecretArgument);
+        assertEquals(List.of("Contraseña generada."), console.outputs);
+        assertTrue(console.errors.isEmpty());
+        Arrays.fill(console.revealedSecret, '\0');
+
+        ScriptedConsole noConsole = new ScriptedConsole(false);
+        AtomicInteger dispatches = new AtomicInteger();
+        CliApplication gated = new CliApplication(new CliArgumentParser(), noConsole, command -> {
+            dispatches.incrementAndGet();
+            return CliExitStatus.SUCCESS;
+        });
+        assertEquals(1, gated.run("generate", "--length", "12"));
+        assertEquals(0, dispatches.get());
+        assertEquals(0, noConsole.readCalls);
+
+        ScriptedConsole invalid = new ScriptedConsole(true);
+        assertEquals(1, app(invalid).run("generate", "--length", "11"));
+        assertEquals(0, invalid.availabilityChecks);
+    }
+
+    @Test
+    void generateHonorsExplicitLengthAndClearsThePrivateChannelBuffer() {
+        ScriptedConsole console = new ScriptedConsole(true);
+        CliApplication application = new CliApplication(new CliArgumentParser(), console,
+                new VaultCliCommands(console, new VaultStorage(), new PasswordGenerator()));
+
+        assertEquals(0, application.run("generate", "--length", "12"));
+        assertEquals(1, console.secretWrites);
+        assertEquals(12, console.revealedSecret.length);
+        assertCleared(console.lastSecretArgument);
+        Arrays.fill(console.revealedSecret, '\0');
+    }
+
+    @Test
+    void generateFailuresAreGenericAndClearBuffersWithoutFallback() {
+        ScriptedConsole generatorFailureConsole = new ScriptedConsole(true);
+        CliApplication generatorFailure = new CliApplication(new CliArgumentParser(), generatorFailureConsole,
+                new VaultCliCommands(generatorFailureConsole, new VaultStorage(), length -> {
+                    throw new IllegalStateException("synthetic-generated-value");
+                }));
+        assertEquals(1, generatorFailure.run("generate"));
+        assertEquals(List.of("No se pudo completar la operación."), generatorFailureConsole.errors);
+        assertTrue(generatorFailureConsole.outputs.isEmpty());
+        assertEquals(0, generatorFailureConsole.secretWrites);
+
+        ScriptedConsole writeFailureConsole = new ScriptedConsole(true);
+        writeFailureConsole.failSecretWrite = true;
+        CliApplication writeFailure = new CliApplication(new CliArgumentParser(), writeFailureConsole,
+                new VaultCliCommands(writeFailureConsole, new VaultStorage(), length -> {
+                    char[] generated = new char[length];
+                    Arrays.fill(generated, 'x');
+                    return generated;
+                }));
+        assertEquals(1, writeFailure.run("generate", "--length", "12"));
+        assertEquals(List.of("No se pudo completar la operación."), writeFailureConsole.errors);
+        assertTrue(writeFailureConsole.outputs.isEmpty());
+        assertEquals(1, writeFailureConsole.secretWrites);
+        assertCleared(writeFailureConsole.lastSecretArgument);
+        assertTrue(writeFailureConsole.revealedSecret == null);
     }
 
     @Test
@@ -353,7 +424,10 @@ class CliApplicationTest {
         private final List<char[]> returnedPasswords = new ArrayList<>();
         private int availabilityChecks;
         private int readCalls;
+        private int secretWrites;
         private char[] revealedSecret;
+        private char[] lastSecretArgument;
+        private boolean failSecretWrite;
         private Runnable beforeNextLine = () -> { };
 
         private ScriptedConsole(boolean available, Object... inputs) {
@@ -403,7 +477,12 @@ class CliApplicationTest {
         }
 
         @Override
-        public void printSecret(char[] secret) {
+        public void printSecret(char[] secret) throws IOException {
+            secretWrites++;
+            lastSecretArgument = secret;
+            if (failSecretWrite) {
+                throw new IOException("synthetic-console-write-error");
+            }
             revealedSecret = secret.clone();
         }
     }

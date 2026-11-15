@@ -1,5 +1,7 @@
 package cl.germain.vault.cli;
 
+import cl.germain.vault.generator.PasswordGenerator;
+
 /** Java entry point for the interactive password-vault CLI. */
 public final class Main {
     private Main() { }
@@ -13,6 +15,7 @@ public final class Main {
 
     static int run(String[] arguments, CliConsole console) {
         return new CliApplication(new CliArgumentParser(), console,
-                new VaultCliCommands(console, new cl.germain.vault.storage.VaultStorage())).run(arguments);
+                new VaultCliCommands(console, new cl.germain.vault.storage.VaultStorage(),
+                        new PasswordGenerator())).run(arguments);
     }
 }

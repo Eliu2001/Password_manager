@@ -23,20 +23,20 @@
   atómica, detección de cambios externos, pruebas de límites y matrices adversariales.
 - **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 63 pruebas,
   0 fallos y 1 omitida (Windows; symlink no disponible).
-- **Limitaciones de plataforma:** ejecución actual en Windows; ACL del usuario
+- **Limitaciones de plataforma:** ejecución local en Windows; ACL del usuario
   actual comprobada; escritura y reemplazo atómico real pasaron en el filesystem
   temporal de Windows. El fallo de atomic move se simuló con inyección y comprobó
-  fail-closed, preservación del destino y limpieza temporal. POSIX 0600 requiere
-  la primera ejecución del workflow Linux `.github/workflows/verify.yml`. La prueba
-  de symlinks se omitió mediante assumption porque Windows devolvió
-  `FileSystemException` al crearlos; el job Linux exige que esa prueba se ejecute
-  y falle si no puede crear symlinks. Ninguna de esas ramas se declara ejecutada
-  hasta que el workflow termine en verde.
+  fail-closed, preservación del destino y limpieza temporal. El workflow
+  `.github/workflows/verify.yml` se ejecutó en GitHub Actions sobre Linux y terminó
+  en verde, cubriendo la verificación POSIX 0600 y la prueba de symlinks que se
+  omitía en Windows. No se conserva aquí el enlace ni el identificador de esa
+  ejecución.
 - **Formato:** `docs/FORMAT.md` actualizado. El AAD son los primeros 34 bytes
   exactos del encabezado; nonce protegido por GCM y longitud validada
   estructuralmente, según la decisión aprobada en Spec 002.
-- **Cierre:** AC-1–AC-17 probados o con limitación de plataforma registrada; formato
-  v1 documentado en `docs/FORMAT.md`. El siguiente alcance queda por decidir.
+- **Cierre:** AC-1–AC-17 probados; formato v1 documentado en `docs/FORMAT.md`.
+  La verificación Linux posterior confirmó las pruebas dependientes de
+  plataforma.
 
 ## Tareas completadas y verificación
 
@@ -100,8 +100,27 @@
   explícita para altas y borrados confirmados.
 - **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 77 pruebas,
   0 fallos y 1 omitida.
-- **Limitación de plataforma:** ejecución en Windows; la prueba de symlink de
-  Storage permanece omitida por restricción de plataforma y requiere la
-  verificación del workflow Linux ya registrada en el progreso de Spec 002.
+- **Verificación multiplataforma:** además de la verificación local en Windows,
+  el workflow `.github/workflows/verify.yml` terminó en verde en GitHub Actions
+  sobre Linux; la prueba de symlink y las comprobaciones POSIX ya no quedan
+  pendientes. No se conserva aquí el enlace ni el identificador de esa ejecución.
 - **Seguridad:** no se añadieron dependencias ni se modificaron el formato v1 o
   `docs/THREAT_MODEL.md`; no se registraron secretos en salidas/errores.
+
+## Spec 004 — password-generator
+
+- **Estado:** cerrada el 2026-11-14; T01–T12 completadas; AC-1–AC-8 cubiertos.
+- **Spec:** `docs/specs/004-password-generator/spec.md`.
+- **Plan:** `docs/specs/004-password-generator/plan.md`.
+- **Tareas:** `docs/specs/004-password-generator/tasks.md`.
+- **Alcance aprobado:** comando interactivo `generate`, longitud predeterminada
+  de 20 (configurable de 12 a 128), salida solo por consola privada; sin guardar
+  la contraseña en una bóveda.
+- **Alcance implementado:** API `PasswordGenerator` y comando interactivo
+  `generate [--length <n>]`; salida solo por consola privada, sin abrir ni guardar
+  una bóveda.
+- **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 84 pruebas,
+  0 fallos y 1 omitida (symlink no disponible en Windows).
+- **Seguridad y arquitectura:** sin dependencias nuevas ni cambios al formato v1
+  o `docs/THREAT_MODEL.md`; el arreglo generado se limpia en éxito y al fallar la
+  impresión. `generator` no depende de otros paquetes del proyecto.
