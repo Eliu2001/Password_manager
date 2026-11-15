@@ -169,3 +169,29 @@
 - **Limitaciones:** la prueba de timeout/lectura y ciclo de sesión usa consola
   sustituible; no se hizo una comprobación manual en TTY real. CI Linux para esta
   spec sigue pendiente y no se marca como ejecutado.
+
+## Spec 007 — distribution
+
+- **Estado:** implementación en curso; autorizada el 2026-11-15. El usuario
+  aprobó `org.apache.maven.plugins:maven-shade-plugin:3.6.2`.
+- **Decisiones aprobadas:** JAR autocontenido para Java 21; primera versión
+  `1.0.0`; adjunto manual a GitHub Release `v1.0.0`; README en español; incluir
+  checksum SHA-256 verificable. `jpackage`, runtime incluido y publicación
+  automática por tag quedan fuera de esta etapa.
+- **Plan/tareas:** `docs/specs/007-distribution/plan.md` y
+  `docs/specs/007-distribution/tasks.md`.
+- **Alcance previsto:** `maven-shade-plugin` con versión fija, artefacto local
+  `target/password-vault.jar`, manifest de `cl.germain.vault.cli.Main`, Java 21
+  como requisito y verificación del JAR en CI Linux. Sin cambios a formato de
+  bóveda ni al modelo de amenazas.
+- **Implementado localmente:** versión Maven `1.0.0`, JAR autocontenido con
+  Bouncy Castle, servicio/licencia preservados y manifest ejecutable; `README.md`
+  documenta uso, seguridad, dependencias y publicación manual. CI comprueba
+  contenido/ayuda/checksum POSIX; falta ejecutar el workflow Linux.
+- **Verificación local:** `./mvnw.cmd verify` pasó con 120 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible en Windows. `java -jar
+  target/password-vault.jar --help`, manifest, ausencia de JUnit, licencia,
+  descriptor de provider y checksum PowerShell comprobados.
+- **Pendiente:** ejecutar el workflow CI Linux real (incluye verificación POSIX
+  del checksum) y completar T07, T08, T11 y T16. No se afirma todavía validación
+  Linux ni cierre de AC.

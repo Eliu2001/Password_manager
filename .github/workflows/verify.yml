@@ -19,3 +19,25 @@ jobs:
           cache: maven
       - name: Verify project
         run: bash ./mvnw verify
+      - name: Verify packaged CLI
+        shell: bash
+        run: |
+          test -f target/password-vault.jar
+          entries="$(jar tf target/password-vault.jar)"
+          printf '%s\n' "$entries" | grep -Fxq 'org/bouncycastle/jce/provider/BouncyCastleProvider.class'
+          printf '%s\n' "$entries" | grep -Fxq 'META-INF/LICENSE.md'
+          printf '%s\n' "$entries" | grep -Fxq 'META-INF/services/java.security.Provider'
+          unzip -p target/password-vault.jar META-INF/services/java.security.Provider | grep -Fxq 'org.bouncycastle.jce.provider.BouncyCastleProvider'
+          if printf '%s\n' "$entries" | grep -Eq '^(org/junit|org/jupiter)/'; then
+            echo 'Test dependency unexpectedly packaged' >&2
+            exit 1
+          fi
+          manifest="$(unzip -p target/password-vault.jar META-INF/MANIFEST.MF)"
+          printf '%s\n' "$manifest" | grep -Fxq 'Main-Class: cl.germain.vault.cli.Main'
+          help="$(java -jar target/password-vault.jar --help)"
+          printf '%s\n' "$help" | grep -Fq 'Main create --vault <ruta>'
+          printf '%s\n' "$help" | grep -Fq 'Comandos: create, add, list, show, delete, generate, set-totp, remove-totp, totp, upgrade, session'
+          sha256sum target/password-vault.jar | cut -d ' ' -f 1 > target/password-vault.jar.sha256
+          expected="$(cat target/password-vault.jar.sha256)"
+          actual="$(sha256sum target/password-vault.jar | cut -d ' ' -f 1)"
+          test "$expected" = "$actual"
