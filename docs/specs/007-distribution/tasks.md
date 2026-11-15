@@ -89,7 +89,8 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
 
   **Implementado; evidencia CI Linux pendiente.** El workflow comprueba manifest,
   clases/runtime, licencia, provider service, ausencia de JUnit y el arranque de
-  ayuda.
+  ayuda. Tras el primer run se sustituyeron pipes `printf | grep -q` por
+  here-strings para evitar `Broken pipe` con `pipefail`; falta confirmar el rerun.
 
 - [ ] **T08 — Validar generación y verificación SHA-256** (25 min)\
   **RF:** R3 · **AC:** AC-4, AC-7\

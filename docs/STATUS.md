@@ -199,3 +199,6 @@
 - **Pendiente:** ejecutar el workflow CI Linux real (incluye verificación POSIX
   del checksum) y completar T07, T08, T11 y T16. No se afirma todavía validación
   Linux ni cierre de AC.
+- **Incidente CI:** el paso de inspección del JAR falló porque `grep -q` cerró
+  antes las tuberías de `printf` bajo `pipefail` (Broken pipe). Se reemplazaron
+  esas tuberías por here-strings; queda pendiente rerun para confirmar.
