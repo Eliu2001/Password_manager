@@ -194,7 +194,9 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   0 errores, 1 omitida por symlink no disponible). CI Linux terminó en `success`
   en [run 43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522).
   Artefacto, ayuda, checksum, documentación y AC-1–AC-7 revisados; Spec 007
-  cerrada el 2026-11-15.
+  cerrada el 2026-11-15. Posteriormente se publicó el Release
+  [`v1.0.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.0.0);
+  se descargaron y verificaron ambos adjuntos y el arranque del JAR.
 
 ## Fuera de alcance
 
@@ -203,5 +205,5 @@ actualizaciones, repositorio Maven, GUI o publicación automática. No probar
 comandos operativos mediante pipes ni automatizar contraseñas. Crear un Release
 real no es parte del build; las instrucciones y archivos adjuntos sí deben quedar
 preparados/documentados. La implementación quedó cerrada al completar las tareas
-y obtener evidencia Windows/Linux; no crear ni publicar el Release real como
-parte de esta spec.
+y obtener evidencia Windows/Linux. El Release manual se publicó posteriormente;
+la automatización de publicación sigue fuera de alcance.

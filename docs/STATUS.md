@@ -83,9 +83,6 @@
 
 ## Pendientes actuales
 
-- **Publicación:** falta crear manualmente el GitHub Release `v1.0.0` y adjuntar
-  `password-vault-1.0.0.jar` más `password-vault-1.0.0.jar.sha256`. No hay
-  Releases publicados; instrucciones en `README.md`.
 - **TTY real de Spec 006 (opcional):** no se hizo una prueba manual del ciclo de
   autobloqueo en una terminal real. Las pruebas automatizadas usan consola
   sustituible; la spec está cerrada y la suite pasó en CI Linux.
@@ -207,5 +204,7 @@
   checksum POSIX.
 - **Cierre:** Windows `./mvnw.cmd verify` — BUILD SUCCESS, 120 pruebas, 0 fallos,
   0 errores y 1 omitida por symlink no disponible. CI Linux y SHA-256 POSIX
-  verificados; README actualizado; AC-1–AC-7 cubiertos. No se publicó un Release
-  real, según el alcance manual de la spec.
+  verificados; README actualizado; AC-1–AC-7 cubiertos. GitHub Release
+  [`v1.0.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.0.0)
+  publicado con JAR y checksum. Se descargaron los dos adjuntos, se confirmó que
+  el SHA-256 publicado coincide con el JAR y que el JAR ejecuta `--help`.
