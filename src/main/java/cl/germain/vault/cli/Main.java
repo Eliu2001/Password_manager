@@ -14,11 +14,14 @@ public final class Main {
   }
 
   static int run(String[] arguments, CliConsole console) {
+    CliArgumentParser parser = new CliArgumentParser();
+    cl.germain.vault.storage.VaultStorage storage = new cl.germain.vault.storage.VaultStorage();
+    VaultCliCommands commands = new VaultCliCommands(console, storage, new PasswordGenerator());
     return new CliApplication(
-            new CliArgumentParser(),
+            parser,
             console,
-            new VaultCliCommands(
-                console, new cl.germain.vault.storage.VaultStorage(), new PasswordGenerator()))
+            commands,
+            new CliSessionRunner(console, storage, commands, parser, MonotonicTicker.system()))
         .run(arguments);
   }
 }

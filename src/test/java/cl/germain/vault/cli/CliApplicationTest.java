@@ -843,6 +843,7 @@ class CliApplicationTest {
     private final boolean available;
     private final Queue<Object> inputs = new LinkedList<>();
     private final List<String> outputs = new ArrayList<>();
+    private final List<String> privateOutputs = new ArrayList<>();
     private final List<String> errors = new ArrayList<>();
     private final List<char[]> returnedPasswords = new ArrayList<>();
     private int availabilityChecks;
@@ -890,6 +891,16 @@ class CliApplicationTest {
     }
 
     @Override
+    public TimedLineResult readLineUntil(String prompt, long timeoutNanos)
+        throws IOException, InterruptedException {
+      String line = readLine(prompt);
+      return line == null ? TimedLineResult.endOfInput() : TimedLineResult.line(line);
+    }
+
+    @Override
+    public void discardPendingLine() {}
+
+    @Override
     public void printOutput(String message) {
       outputs.add(message);
     }
@@ -897,6 +908,11 @@ class CliApplicationTest {
     @Override
     public void printError(String message) {
       errors.add(message);
+    }
+
+    @Override
+    public void printPrivate(String message) {
+      privateOutputs.add(message);
     }
 
     @Override

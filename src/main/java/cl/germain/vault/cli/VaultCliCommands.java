@@ -9,6 +9,7 @@ import cl.germain.vault.totp.Base32;
 import cl.germain.vault.totp.TotpGenerator;
 import java.io.IOException;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -53,144 +54,170 @@ public final class VaultCliCommands implements CliCommandHandler {
       throws IOException, DecryptionException, InterruptedException {
     return switch (command.type()) {
       case CREATE -> create(command);
-      case ADD -> add(command);
-      case LIST -> list(command);
-      case SHOW -> show(command);
-      case DELETE -> delete(command);
+      case ADD -> runWithSession(command, null, session -> add(command, session));
+      case LIST -> runWithSession(command, null, session -> list(session));
+      case SHOW -> runWithSession(command, null, session -> show(command, session));
+      case DELETE -> runWithSession(command, null, session -> delete(command, session, false));
       case GENERATE -> generate(command);
-      case SET_TOTP -> setTotp(command);
-      case REMOVE_TOTP -> removeTotp(command);
-      case TOTP -> totp(command);
-      case UPGRADE -> upgrade(command);
+      case SET_TOTP -> runWithSession(command, null, session -> setTotp(command, session));
+      case REMOVE_TOTP -> runWithSession(command, null, session -> removeTotp(command, session));
+      case TOTP -> runWithSession(command, null, session -> totp(command, session));
+      case UPGRADE -> runWithSession(command, null, session -> upgrade(session));
       case HELP -> CliExitStatus.SUCCESS;
     };
   }
 
-  private CliExitStatus setTotp(CliCommand command)
+  /** Executes a vault command using a session owned by the caller. */
+  public CliExitStatus executeInSession(CliCommand command, VaultSession session)
       throws IOException, DecryptionException, InterruptedException {
-    char[] master = null, first = null, second = null;
+    Objects.requireNonNull(session, "session");
+    return switch (command.type()) {
+      case ADD -> runWithSession(command, session, active -> add(command, active));
+      case LIST -> runWithSession(command, session, this::list);
+      case SHOW -> runWithSession(command, session, active -> show(command, active));
+      case DELETE -> runWithSession(command, session, active -> delete(command, active, true));
+      case SET_TOTP -> runWithSession(command, session, active -> setTotp(command, active));
+      case REMOVE_TOTP -> runWithSession(command, session, active -> removeTotp(command, active));
+      case TOTP -> runWithSession(command, session, active -> totp(command, active));
+      case UPGRADE -> runWithSession(command, session, this::upgrade);
+      default -> {
+        console.printError("El comando no está disponible dentro de una sesión.");
+        yield CliExitStatus.ERROR;
+      }
+    };
+  }
+
+  private CliExitStatus runWithSession(
+      CliCommand command, VaultSession activeSession, SessionOperation operation)
+      throws IOException, DecryptionException, InterruptedException {
+    CommandResult result = null;
+    if (activeSession != null) {
+      result = operation.execute(activeSession);
+      return emit(result, true);
+    }
+
+    char[] masterPassword = null;
+    boolean emitted = false;
+    try {
+      masterPassword = console.readPassword("Contraseña maestra: ");
+      if (masterPassword == null) return inputCancelled();
+      try (VaultSession session = storage.open(command.vaultPath(), masterPassword)) {
+        result = operation.execute(session);
+      }
+      CliExitStatus status = emit(result, false);
+      emitted = true;
+      return status;
+    } finally {
+      clear(masterPassword);
+      if (!emitted && result != null) clear(result.secret());
+    }
+  }
+
+  private CliExitStatus emit(CommandResult result, boolean privateOutput) throws IOException {
+    try {
+      if (result.secretFirst() && result.secret() != null) console.printSecret(result.secret());
+      for (String line : result.output()) {
+        if (privateOutput) console.printPrivate(line);
+        else console.printOutput(line);
+      }
+      if (!result.secretFirst() && result.secret() != null) console.printSecret(result.secret());
+      return result.status();
+    } finally {
+      clear(result.secret());
+    }
+  }
+
+  private CommandResult setTotp(CliCommand command, VaultSession session)
+      throws IOException, InterruptedException {
+    char[] first = null, second = null;
     byte[] decoded = null;
     try {
-      master = console.readPassword("Contraseña maestra: ");
-      if (master == null) return inputCancelled();
-      try (VaultSession session = storage.open(command.vaultPath(), master)) {
-        if (session.version() != 2) {
-          console.printError("Ejecute upgrade antes de gestionar TOTP.");
-          return CliExitStatus.ERROR;
-        }
-        var entry = session.vault().get(command.entryId());
-        if (entry.isEmpty()) {
-          console.printError("No se encontró la entrada solicitada.");
-          return CliExitStatus.ERROR;
-        }
-        first = console.readPassword("Secreto TOTP Base32: ");
-        if (first == null) return inputCancelled();
-        second = console.readPassword("Repita el secreto TOTP: ");
-        if (second == null) return inputCancelled();
-        if (!Arrays.equals(first, second)) {
-          console.printError("Los secretos no coinciden.");
-          return CliExitStatus.ERROR;
-        }
-        decoded = Base32.decode(first);
-        byte[] old = session.vault().totpSecret(command.entryId()).orElse(null);
-        if (old != null) {
-          clear(old);
-          if (!"sí"
-              .equals(console.readLine("¿Reemplazar el secreto TOTP? Escriba sí para confirmar: ")))
-            return CliExitStatus.CANCELLED;
-        }
-        session.vault().setTotpSecret(command.entryId(), decoded);
-        session.save();
+      if (session.version() != 2) {
+        console.printError("Ejecute upgrade antes de gestionar TOTP.");
+        return CommandResult.status(CliExitStatus.ERROR);
       }
-      console.printOutput("Secreto TOTP guardado.");
-      return CliExitStatus.SUCCESS;
+      if (session.vault().get(command.entryId()).isEmpty()) {
+        console.printError("No se encontró la entrada solicitada.");
+        return CommandResult.status(CliExitStatus.ERROR);
+      }
+      first = console.readPassword("Secreto TOTP Base32: ");
+      if (first == null) return inputCancelledResult();
+      second = console.readPassword("Repita el secreto TOTP: ");
+      if (second == null) return inputCancelledResult();
+      if (!Arrays.equals(first, second)) {
+        console.printError("Los secretos no coinciden.");
+        return CommandResult.status(CliExitStatus.ERROR);
+      }
+      decoded = Base32.decode(first);
+      byte[] old = session.vault().totpSecret(command.entryId()).orElse(null);
+      if (old != null) {
+        clear(old);
+        if (!"sí"
+            .equals(console.readLine("¿Reemplazar el secreto TOTP? Escriba sí para confirmar: ")))
+          return CommandResult.status(CliExitStatus.CANCELLED);
+      }
+      session.vault().setTotpSecret(command.entryId(), decoded);
+      session.save();
+      return CommandResult.output(CliExitStatus.SUCCESS, "Secreto TOTP guardado.");
     } finally {
-      clear(master, first, second);
+      clear(first, second);
       clear(decoded);
     }
   }
 
-  private CliExitStatus removeTotp(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] master = null;
+  private CommandResult removeTotp(CliCommand command, VaultSession session)
+      throws IOException, InterruptedException {
     byte[] secret = null;
     try {
-      master = console.readPassword("Contraseña maestra: ");
-      if (master == null) return inputCancelled();
-      try (VaultSession session = storage.open(command.vaultPath(), master)) {
-        if (session.version() != 2) {
-          console.printError("Ejecute upgrade antes de gestionar TOTP.");
-          return CliExitStatus.ERROR;
-        }
-        secret = session.vault().totpSecret(command.entryId()).orElse(null);
-        if (secret == null) {
-          console.printError("La entrada no tiene secreto TOTP.");
-          return CliExitStatus.ERROR;
-        }
-        if (!"sí".equals(console.readLine("¿Retirar el secreto TOTP? Escriba sí para confirmar: ")))
-          return CliExitStatus.CANCELLED;
-        session.vault().removeTotpSecret(command.entryId());
-        session.save();
+      if (session.version() != 2) {
+        console.printError("Ejecute upgrade antes de gestionar TOTP.");
+        return CommandResult.status(CliExitStatus.ERROR);
       }
-      console.printOutput("Secreto TOTP retirado.");
-      return CliExitStatus.SUCCESS;
+      secret = session.vault().totpSecret(command.entryId()).orElse(null);
+      if (secret == null) {
+        console.printError("La entrada no tiene secreto TOTP.");
+        return CommandResult.status(CliExitStatus.ERROR);
+      }
+      if (!"sí".equals(console.readLine("¿Retirar el secreto TOTP? Escriba sí para confirmar: ")))
+        return CommandResult.status(CliExitStatus.CANCELLED);
+      session.vault().removeTotpSecret(command.entryId());
+      session.save();
+      return CommandResult.output(CliExitStatus.SUCCESS, "Secreto TOTP retirado.");
     } finally {
-      clear(master);
       clear(secret);
     }
   }
 
-  private CliExitStatus totp(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] master = null, code = null;
+  private CommandResult totp(CliCommand command, VaultSession session) throws IOException {
     byte[] secret = null;
     try {
-      master = console.readPassword("Contraseña maestra: ");
-      if (master == null) return inputCancelled();
-      try (VaultSession session = storage.open(command.vaultPath(), master)) {
-        if (session.version() != 2) {
-          console.printError("Ejecute upgrade antes de consultar TOTP.");
-          return CliExitStatus.ERROR;
-        }
-        secret = session.vault().totpSecret(command.entryId()).orElse(null);
-        if (secret == null) {
-          console.printError("La entrada no tiene secreto TOTP.");
-          return CliExitStatus.ERROR;
-        }
-        TotpGenerator.Result result = new TotpGenerator(clock).generateCurrent(secret);
-        int remaining = result.secondsRemaining();
-        code = result.code();
-        console.printSecret(code);
-        console.printOutput("Tiempo restante: " + remaining + " segundos.");
+      if (session.version() != 2) {
+        console.printError("Ejecute upgrade antes de consultar TOTP.");
+        return CommandResult.status(CliExitStatus.ERROR);
       }
-      return CliExitStatus.SUCCESS;
+      secret = session.vault().totpSecret(command.entryId()).orElse(null);
+      if (secret == null) {
+        console.printError("La entrada no tiene secreto TOTP.");
+        return CommandResult.status(CliExitStatus.ERROR);
+      }
+      TotpGenerator.Result result = new TotpGenerator(clock).generateCurrent(secret);
+      char[] code = result.code();
+      return CommandResult.secret(
+          code, "Tiempo restante: " + result.secondsRemaining() + " segundos.");
     } finally {
-      clear(master, code);
       clear(secret);
     }
   }
 
-  private CliExitStatus upgrade(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] master = null;
-    try {
-      master = console.readPassword("Contraseña maestra: ");
-      if (master == null) return inputCancelled();
-      try (VaultSession session = storage.open(command.vaultPath(), master)) {
-        if (session.version() != 1) {
-          console.printError("La bóveda ya está en formato v2.");
-          return CliExitStatus.ERROR;
-        }
-        if (!"sí"
-            .equals(console.readLine("¿Convertir la bóveda a v2? Escriba sí para confirmar: ")))
-          return CliExitStatus.CANCELLED;
-        session.upgradeToV2();
-      }
-      console.printOutput("Bóveda actualizada a formato v2.");
-      return CliExitStatus.SUCCESS;
-    } finally {
-      clear(master);
+  private CommandResult upgrade(VaultSession session) throws IOException, InterruptedException {
+    if (session.version() != 1) {
+      console.printError("La bóveda ya está en formato v2.");
+      return CommandResult.status(CliExitStatus.ERROR);
     }
+    if (!"sí".equals(console.readLine("¿Convertir la bóveda a v2? Escriba sí para confirmar: ")))
+      return CommandResult.status(CliExitStatus.CANCELLED);
+    session.upgradeToV2();
+    return CommandResult.output(CliExitStatus.SUCCESS, "Bóveda actualizada a formato v2.");
   }
 
   private CliExitStatus generate(CliCommand command) throws IOException {
@@ -227,142 +254,112 @@ public final class VaultCliCommands implements CliCommandHandler {
     }
   }
 
-  private CliExitStatus add(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] masterPassword = null;
+  private CommandResult add(CliCommand command, VaultSession session)
+      throws IOException, InterruptedException {
     char[] entryPassword = null;
     try {
-      masterPassword = console.readPassword("Contraseña maestra: ");
-      if (masterPassword == null) return inputCancelled();
-      String formattedId;
-      try (VaultSession session = storage.open(command.vaultPath(), masterPassword)) {
-        String service = console.readLine("Servicio: ");
-        if (service == null) return inputCancelled();
-        String username = console.readLine("Usuario: ");
-        if (username == null) return inputCancelled();
-        entryPassword = console.readPassword("Contraseña de la entrada: ");
-        if (entryPassword == null) return inputCancelled();
-        String notes = console.readLine("Notas (opcional): ");
-        if (notes == null) return inputCancelled();
-        if (service.isEmpty() || username.isEmpty() || entryPassword.length == 0) {
-          console.printError("Servicio, usuario y contraseña son obligatorios.");
-          return CliExitStatus.ERROR;
-        }
-
-        byte[] id = session.vault().add(service, username, entryPassword, notes);
-        try {
-          session.save();
-          formattedId = CliArgumentParser.formatId(id);
-        } finally {
-          Arrays.fill(id, (byte) 0);
-        }
+      String service = console.readLine("Servicio: ");
+      if (service == null) return inputCancelledResult();
+      String username = console.readLine("Usuario: ");
+      if (username == null) return inputCancelledResult();
+      entryPassword = console.readPassword("Contraseña de la entrada: ");
+      if (entryPassword == null) return inputCancelledResult();
+      String notes = console.readLine("Notas (opcional): ");
+      if (notes == null) return inputCancelledResult();
+      if (service.isEmpty() || username.isEmpty() || entryPassword.length == 0) {
+        console.printError("Servicio, usuario y contraseña son obligatorios.");
+        return CommandResult.status(CliExitStatus.ERROR);
       }
-      console.printOutput("Entrada guardada. ID: " + formattedId);
-      return CliExitStatus.SUCCESS;
-    } finally {
-      clear(masterPassword, entryPassword);
-    }
-  }
 
-  private CliExitStatus list(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] masterPassword = null;
-    try {
-      masterPassword = console.readPassword("Contraseña maestra: ");
-      if (masterPassword == null) return inputCancelled();
-      List<String> lines = new java.util.ArrayList<>();
-      try (VaultSession session = storage.open(command.vaultPath(), masterPassword)) {
-        List<Entry> entries = session.vault().list();
-        if (entries.isEmpty()) {
-          lines.add("La bóveda está vacía.");
-        } else {
-          for (Entry entry : entries) {
-            lines.add(
-                CliArgumentParser.formatId(entry.id())
-                    + " | "
-                    + entry.service()
-                    + " | "
-                    + entry.username());
-          }
-        }
-      }
-      lines.forEach(console::printOutput);
-      return CliExitStatus.SUCCESS;
-    } finally {
-      clear(masterPassword);
-    }
-  }
-
-  private CliExitStatus show(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] masterPassword = null;
-    char[] entryPassword = null;
-    try {
-      masterPassword = console.readPassword("Contraseña maestra: ");
-      if (masterPassword == null) return inputCancelled();
-      String idText;
-      String service;
-      String username;
-      String notes;
-      boolean reveal;
-      try (VaultSession session = storage.open(command.vaultPath(), masterPassword)) {
-        Optional<Entry> found = session.vault().get(command.entryId());
-        if (found.isEmpty()) {
-          console.printError("No se encontró la entrada solicitada.");
-          return CliExitStatus.ERROR;
-        }
-        Entry entry = found.orElseThrow();
-        idText = CliArgumentParser.formatId(entry.id());
-        service = entry.service();
-        username = entry.username();
-        notes = entry.notes();
-        String answer = console.readLine("¿Revelar la contraseña? Escriba sí para confirmar: ");
-        reveal = "sí".equals(answer);
-        if (reveal) entryPassword = entry.password();
-      }
-      console.printOutput("ID: " + idText);
-      console.printOutput("Servicio: " + service);
-      console.printOutput("Usuario: " + username);
-      console.printOutput("Notas: " + notes);
-      if (reveal) console.printSecret(entryPassword);
-      else return CliExitStatus.CANCELLED;
-      return CliExitStatus.SUCCESS;
-    } finally {
-      clear(masterPassword, entryPassword);
-    }
-  }
-
-  private CliExitStatus delete(CliCommand command)
-      throws IOException, DecryptionException, InterruptedException {
-    char[] masterPassword = null;
-    try {
-      masterPassword = console.readPassword("Contraseña maestra: ");
-      if (masterPassword == null) return inputCancelled();
-      try (VaultSession session = storage.open(command.vaultPath(), masterPassword)) {
-        Optional<Entry> found = session.vault().get(command.entryId());
-        if (found.isEmpty()) {
-          console.printError("No se encontró la entrada solicitada.");
-          return CliExitStatus.ERROR;
-        }
-        Entry entry = found.orElseThrow();
-        console.printOutput("ID: " + CliArgumentParser.formatId(entry.id()));
-        console.printOutput("Servicio: " + entry.service());
-        console.printOutput("Usuario: " + entry.username());
-        String answer = console.readLine("¿Borrar esta entrada? Escriba sí para confirmar: ");
-        if (!"sí".equals(answer)) return CliExitStatus.CANCELLED;
-        session.vault().remove(command.entryId());
+      byte[] id = session.vault().add(service, username, entryPassword, notes);
+      try {
         session.save();
+        return CommandResult.output(
+            CliExitStatus.SUCCESS, "Entrada guardada. ID: " + CliArgumentParser.formatId(id));
+      } finally {
+        Arrays.fill(id, (byte) 0);
       }
-      console.printOutput("Entrada borrada correctamente.");
-      return CliExitStatus.SUCCESS;
     } finally {
-      clear(masterPassword);
+      clear(entryPassword);
     }
+  }
+
+  private CommandResult list(VaultSession session) {
+    List<Entry> entries = session.vault().list();
+    List<String> lines = new ArrayList<>();
+    if (entries.isEmpty()) {
+      lines.add("La bóveda está vacía.");
+    } else {
+      for (Entry entry : entries) {
+        lines.add(
+            CliArgumentParser.formatId(entry.id())
+                + " | "
+                + entry.service()
+                + " | "
+                + entry.username());
+      }
+    }
+    return CommandResult.output(CliExitStatus.SUCCESS, lines);
+  }
+
+  private CommandResult show(CliCommand command, VaultSession session)
+      throws IOException, InterruptedException {
+    char[] entryPassword = null;
+    try {
+      Optional<Entry> found = session.vault().get(command.entryId());
+      if (found.isEmpty()) {
+        console.printError("No se encontró la entrada solicitada.");
+        return CommandResult.status(CliExitStatus.ERROR);
+      }
+      Entry entry = found.orElseThrow();
+      String answer = console.readLine("¿Revelar la contraseña? Escriba sí para confirmar: ");
+      boolean reveal = "sí".equals(answer);
+      if (reveal) entryPassword = entry.password();
+      List<String> output =
+          List.of(
+              "ID: " + CliArgumentParser.formatId(entry.id()),
+              "Servicio: " + entry.service(),
+              "Usuario: " + entry.username(),
+              "Notas: " + entry.notes());
+      char[] secret = entryPassword;
+      entryPassword = null;
+      return CommandResult.output(
+          reveal ? CliExitStatus.SUCCESS : CliExitStatus.CANCELLED, output, secret);
+    } finally {
+      clear(entryPassword);
+    }
+  }
+
+  private CommandResult delete(CliCommand command, VaultSession session, boolean privateOutput)
+      throws IOException, InterruptedException {
+    Optional<Entry> found = session.vault().get(command.entryId());
+    if (found.isEmpty()) {
+      console.printError("No se encontró la entrada solicitada.");
+      return CommandResult.status(CliExitStatus.ERROR);
+    }
+    Entry entry = found.orElseThrow();
+    printVaultContent("ID: " + CliArgumentParser.formatId(entry.id()), privateOutput);
+    printVaultContent("Servicio: " + entry.service(), privateOutput);
+    printVaultContent("Usuario: " + entry.username(), privateOutput);
+    String answer = console.readLine("¿Borrar esta entrada? Escriba sí para confirmar: ");
+    if (!"sí".equals(answer)) return CommandResult.status(CliExitStatus.CANCELLED);
+    session.vault().remove(command.entryId());
+    session.save();
+    return CommandResult.output(CliExitStatus.SUCCESS, "Entrada borrada correctamente.");
   }
 
   private CliExitStatus inputCancelled() {
     console.printError(CANCELLED);
     return CliExitStatus.ERROR;
+  }
+
+  private CommandResult inputCancelledResult() {
+    return CommandResult.status(inputCancelled());
+  }
+
+  private void printVaultContent(String line, boolean privateOutput) throws IOException {
+    if (privateOutput) console.printPrivate(line);
+    else console.printOutput(line);
   }
 
   private static void clear(char[]... arrays) {
@@ -373,5 +370,38 @@ public final class VaultCliCommands implements CliCommandHandler {
 
   private static void clear(byte[] bytes) {
     if (bytes != null) Arrays.fill(bytes, (byte) 0);
+  }
+
+  @FunctionalInterface
+  private interface SessionOperation {
+    CommandResult execute(VaultSession session) throws IOException, InterruptedException;
+  }
+
+  private record CommandResult(
+      CliExitStatus status, List<String> output, char[] secret, boolean secretFirst) {
+    private CommandResult {
+      Objects.requireNonNull(status);
+      output = List.copyOf(output);
+    }
+
+    static CommandResult status(CliExitStatus status) {
+      return new CommandResult(status, List.of(), null, false);
+    }
+
+    static CommandResult output(CliExitStatus status, String line) {
+      return new CommandResult(status, List.of(line), null, false);
+    }
+
+    static CommandResult output(CliExitStatus status, List<String> lines) {
+      return new CommandResult(status, lines, null, false);
+    }
+
+    static CommandResult output(CliExitStatus status, List<String> lines, char[] secret) {
+      return new CommandResult(status, lines, secret, false);
+    }
+
+    static CommandResult secret(char[] secret, String line) {
+      return new CommandResult(CliExitStatus.SUCCESS, List.of(line), secret, true);
+    }
   }
 }

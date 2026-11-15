@@ -6,8 +6,9 @@ import java.io.PrintWriter;
 import java.util.Objects;
 
 /** Production console adapter. Secret input/output never falls back to standard streams. */
-public final class SystemCliConsole implements CliConsole {
+public final class SystemCliConsole implements CliConsole, AutoCloseable {
   private final Console console;
+  private final TimedConsoleInput timedInput;
 
   public SystemCliConsole() {
     this(System.console());
@@ -15,6 +16,7 @@ public final class SystemCliConsole implements CliConsole {
 
   SystemCliConsole(Console console) {
     this.console = console;
+    this.timedInput = new TimedConsoleInput(this::readConsoleLine);
   }
 
   @Override
@@ -25,6 +27,11 @@ public final class SystemCliConsole implements CliConsole {
   @Override
   public String readLine(String prompt) throws IOException {
     requireConsole();
+    timedInput.ensureNoPendingLine();
+    return readConsoleLine(prompt);
+  }
+
+  private String readConsoleLine(String prompt) throws IOException {
     try {
       String result = console.readLine("%s", prompt);
       if (result == null) {
@@ -39,11 +46,29 @@ public final class SystemCliConsole implements CliConsole {
   @Override
   public char[] readPassword(String prompt) throws IOException {
     requireConsole();
+    timedInput.ensureNoPendingLine();
     try {
       return console.readPassword("%s", prompt);
     } catch (java.io.IOError error) {
       throw new IOException("Console input failed");
     }
+  }
+
+  @Override
+  public TimedLineResult readLineUntil(String prompt, long timeoutNanos)
+      throws IOException, InterruptedException {
+    requireConsole();
+    return timedInput.readLineUntil(prompt, timeoutNanos);
+  }
+
+  @Override
+  public void discardPendingLine() throws IOException, InterruptedException {
+    timedInput.discardPendingLine();
+  }
+
+  @Override
+  public void close() {
+    timedInput.close();
   }
 
   @Override
@@ -54,6 +79,15 @@ public final class SystemCliConsole implements CliConsole {
   @Override
   public void printError(String message) {
     System.err.println(Objects.requireNonNull(message));
+  }
+
+  @Override
+  public void printPrivate(String message) throws IOException {
+    requireConsole();
+    PrintWriter writer = console.writer();
+    writer.println(Objects.requireNonNull(message));
+    writer.flush();
+    if (writer.checkError()) throw new IOException("Console output failed");
   }
 
   @Override

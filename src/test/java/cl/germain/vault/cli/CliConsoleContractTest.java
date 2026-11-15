@@ -13,11 +13,13 @@ class CliConsoleContractTest {
   void replaceableConsoleKeepsOutputErrorAndSecretChannelsSeparate() throws Exception {
     RecordingConsole console = new RecordingConsole();
     console.printOutput("normal");
+    console.printPrivate("vault content");
     console.printError("failure");
     char[] secret = {'s', 'y', 'n'};
     console.printSecret(secret);
 
     assertEquals("normal", console.output);
+    assertEquals("vault content", console.privateOutput);
     assertEquals("failure", console.error);
     assertArrayEquals(secret, console.secret);
   }
@@ -34,6 +36,7 @@ class CliConsoleContractTest {
 
   private static final class RecordingConsole implements CliConsole {
     private String output;
+    private String privateOutput;
     private String error;
     private char[] secret;
     private boolean interrupted;
@@ -56,6 +59,14 @@ class CliConsoleContractTest {
     }
 
     @Override
+    public TimedLineResult readLineUntil(String prompt, long timeoutNanos) {
+      return TimedLineResult.endOfInput();
+    }
+
+    @Override
+    public void discardPendingLine() {}
+
+    @Override
     public void printOutput(String message) {
       output = message;
     }
@@ -63,6 +74,11 @@ class CliConsoleContractTest {
     @Override
     public void printError(String message) {
       error = message;
+    }
+
+    @Override
+    public void printPrivate(String message) {
+      privateOutput = message;
     }
 
     @Override

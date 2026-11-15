@@ -15,5 +15,6 @@ class SystemCliConsoleTest {
     assertThrows(IOException.class, () -> console.readLine("prompt"));
     assertThrows(IOException.class, () -> console.readPassword("password"));
     assertThrows(IOException.class, () -> console.printSecret(new char[] {'x'}));
+    assertThrows(IOException.class, () -> console.printPrivate("private content"));
   }
 }

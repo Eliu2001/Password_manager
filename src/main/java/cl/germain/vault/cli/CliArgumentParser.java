@@ -84,6 +84,70 @@ public final class CliArgumentParser {
     return new CliCommand(type, path, id);
   }
 
+  public CliSessionRequest parseSession(String... arguments) throws CliArgumentException {
+    Objects.requireNonNull(arguments, "arguments");
+    if (arguments.length == 0 || !"session".equals(arguments[0])) throw usageError();
+
+    String vaultValue = null;
+    int timeout = CliSessionRequest.DEFAULT_TIMEOUT_MINUTES;
+    boolean sawVault = false;
+    boolean sawTimeout = false;
+    for (int index = 1; index < arguments.length; index++) {
+      String option = arguments[index];
+      if ("--vault".equals(option)) {
+        if (sawVault || index + 1 >= arguments.length || isOption(arguments[index + 1])) {
+          throw usageError();
+        }
+        sawVault = true;
+        vaultValue = arguments[++index];
+      } else if ("--timeout-minutes".equals(option)) {
+        if (sawTimeout || index + 1 >= arguments.length || isOption(arguments[index + 1])) {
+          throw usageError();
+        }
+        sawTimeout = true;
+        timeout = parseTimeout(arguments[++index]);
+      } else {
+        throw usageError();
+      }
+    }
+
+    if (!sawVault || vaultValue == null || vaultValue.isEmpty()) throw usageError();
+    try {
+      return new CliSessionRequest(Path.of(vaultValue), timeout);
+    } catch (IllegalArgumentException exception) {
+      throw usageError();
+    }
+  }
+
+  public CliSessionCommand parseSessionCommand(String line, Path vaultPath)
+      throws CliArgumentException {
+    Objects.requireNonNull(vaultPath, "vaultPath");
+    if (line == null) throw usageError();
+    String trimmed = line.trim();
+    if (trimmed.equals("help")) return CliSessionCommand.help();
+    if (trimmed.equals("exit")) return CliSessionCommand.exit();
+    if (trimmed.isEmpty()) throw usageError();
+
+    String[] tokens = trimmed.split("\\s+");
+    String operation = tokens[0];
+    if (!(operation.equals("add")
+        || operation.equals("list")
+        || operation.equals("show")
+        || operation.equals("delete")
+        || operation.equals("set-totp")
+        || operation.equals("remove-totp")
+        || operation.equals("totp")
+        || operation.equals("upgrade"))) {
+      throw usageError();
+    }
+    String[] arguments = new String[tokens.length + 2];
+    arguments[0] = operation;
+    arguments[1] = "--vault";
+    arguments[2] = vaultPath.toString();
+    System.arraycopy(tokens, 1, arguments, 3, tokens.length - 1);
+    return CliSessionCommand.operation(parse(arguments));
+  }
+
   public static byte[] parseId(String value) throws CliArgumentException {
     if (value == null || value.length() != 32) {
       throw usageError();
@@ -135,6 +199,21 @@ public final class CliArgumentParser {
         throw usageError();
       }
       return length;
+    } catch (NumberFormatException exception) {
+      throw usageError();
+    }
+  }
+
+  private static int parseTimeout(String value) throws CliArgumentException {
+    if (value == null || value.isEmpty()) throw usageError();
+    for (int index = 0; index < value.length(); index++) {
+      if (value.charAt(index) < '0' || value.charAt(index) > '9') throw usageError();
+    }
+    try {
+      int minutes = Integer.parseInt(value);
+      if (minutes < CliSessionRequest.MIN_TIMEOUT_MINUTES
+          || minutes > CliSessionRequest.MAX_TIMEOUT_MINUTES) throw usageError();
+      return minutes;
     } catch (NumberFormatException exception) {
       throw usageError();
     }

@@ -148,4 +148,24 @@
   comprobó un reemplazo correcto y simuló el fallo de movimiento atómico mediante
   el hook de prueba; no se afirma que un filesystem real haya rechazado el move.
   Las copias internas que `Mac`/proveedor JDK pueda crear no son borrables por la
-  aplicación. No se ejecutó CI Linux como parte de esta tarea.
+   aplicación. No se ejecutó CI Linux como parte de esta tarea.
+
+## Spec 006 — auto-lock
+
+- **Estado:** cerrada el 2026-11-15; T01–T26 completadas; AC-1–AC-10 cubiertos.
+  Spec, plan y tareas: `docs/specs/006-auto-lock/`.
+- **Alcance implementado:** sesión interactiva reutilizable con bloqueo por
+  inactividad, timeout predeterminado de 5 minutos configurable entre 1 y 60,
+  reautenticación al vencer y comandos existentes sobre la misma sesión.
+- **Diseño de consola:** un único lector dedicado espera la línea con timeout.
+  Al vencer, se cierra primero la bóveda; si la lectura bloqueante sigue activa,
+  se descarta su línea al completarse antes de pedir la contraseña maestra. El
+  prompt de reautenticación puede demorarse hasta que la entrada pendiente termine.
+- **Formato/amenazas:** sin cambios al formato de bóveda ni a
+  `docs/THREAT_MODEL.md`; el contenido de la bóveda producido por comandos de
+  sesión se envía al canal privado de consola, no a salida redirigible.
+- **Verificación local:** `./mvnw.cmd verify -q` — **BUILD SUCCESS**, 120 pruebas,
+  0 fallos, 0 errores y 1 omitida por symlink no disponible en Windows.
+- **Limitaciones:** la prueba de timeout/lectura y ciclo de sesión usa consola
+  sustituible; no se hizo una comprobación manual en TTY real. CI Linux para esta
+  spec sigue pendiente y no se marca como ejecutado.
