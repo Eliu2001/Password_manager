@@ -201,4 +201,7 @@
   Linux ni cierre de AC.
 - **Incidente CI:** el paso de inspección del JAR falló porque `grep -q` cerró
   antes las tuberías de `printf` bajo `pipefail` (Broken pipe). Se reemplazaron
-  esas tuberías por here-strings; queda pendiente rerun para confirmar.
+  esas tuberías por here-strings, pero el run siguiente aún terminó con código 1
+  en la comparación exacta de `Main-Class`. El manifest usa CRLF; ahora se
+  eliminan los `\r` antes de comparar. También se añadieron mensajes por
+  aserción; falta un nuevo run para confirmar.

@@ -22,23 +22,43 @@ jobs:
       - name: Verify packaged CLI
         shell: bash
         run: |
+          require_exact() {
+            local expected="$1"
+            local actual="$2"
+            if ! grep -Fxq -- "$expected" <<< "$actual"; then
+              echo "Missing expected value: $expected" >&2
+              return 1
+            fi
+          }
+          require_contains() {
+            local expected="$1"
+            local actual="$2"
+            if ! grep -Fq -- "$expected" <<< "$actual"; then
+              echo "Missing expected text: $expected" >&2
+              return 1
+            fi
+          }
           test -f target/password-vault.jar
           entries="$(jar tf target/password-vault.jar)"
-          grep -Fxq 'org/bouncycastle/jce/provider/BouncyCastleProvider.class' <<< "$entries"
-          grep -Fxq 'META-INF/LICENSE.md' <<< "$entries"
-          grep -Fxq 'META-INF/services/java.security.Provider' <<< "$entries"
+          require_exact 'org/bouncycastle/jce/provider/BouncyCastleProvider.class' "$entries"
+          require_exact 'META-INF/LICENSE.md' "$entries"
+          require_exact 'META-INF/services/java.security.Provider' "$entries"
           provider="$(unzip -p target/password-vault.jar META-INF/services/java.security.Provider)"
-          grep -Fxq 'org.bouncycastle.jce.provider.BouncyCastleProvider' <<< "$provider"
+          require_exact 'org.bouncycastle.jce.provider.BouncyCastleProvider' "$provider"
           if grep -Eq '^(org/junit|org/jupiter)/' <<< "$entries"; then
             echo 'Test dependency unexpectedly packaged' >&2
+            grep -E '^(org/junit|org/jupiter)/' <<< "$entries" >&2
             exit 1
           fi
-          manifest="$(unzip -p target/password-vault.jar META-INF/MANIFEST.MF)"
-          grep -Fxq 'Main-Class: cl.germain.vault.cli.Main' <<< "$manifest"
+          manifest="$(unzip -p target/password-vault.jar META-INF/MANIFEST.MF | tr -d '\r')"
+          require_exact 'Main-Class: cl.germain.vault.cli.Main' "$manifest"
           help="$(java -jar target/password-vault.jar --help)"
-          grep -Fq 'Main create --vault <ruta>' <<< "$help"
-          grep -Fq 'Comandos: create, add, list, show, delete, generate, set-totp, remove-totp, totp, upgrade, session' <<< "$help"
+          require_contains 'Main create --vault <ruta>' "$help"
+          require_contains 'Comandos: create, add, list, show, delete, generate, set-totp, remove-totp, totp, upgrade, session' "$help"
           sha256sum target/password-vault.jar | cut -d ' ' -f 1 > target/password-vault.jar.sha256
           expected="$(cat target/password-vault.jar.sha256)"
           actual="$(sha256sum target/password-vault.jar | cut -d ' ' -f 1)"
-          test "$expected" = "$actual"
+          if [[ "$expected" != "$actual" ]]; then
+            echo "SHA-256 mismatch: expected $expected, calculated $actual" >&2
+            exit 1
+          fi
