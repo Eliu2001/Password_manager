@@ -12,8 +12,12 @@ public final class CliApplication {
             + "  Main show --vault <ruta> --id <id>\n"
             + "  Main delete --vault <ruta> --id <id>\n"
             + "  Main generate [--length <n>] (predeterminado: 20; rango: 12–128)\n"
+            + "  Main set-totp --vault <ruta> --id <id>\n"
+            + "  Main remove-totp --vault <ruta> --id <id>\n"
+            + "  Main totp --vault <ruta> --id <id>\n"
+            + "  Main upgrade --vault <ruta>\n"
             + "  Main --help\n"
-            + "Comandos: create, add, list, show, delete, generate";
+            + "Comandos: create, add, list, show, delete, generate, set-totp, remove-totp, totp, upgrade";
     private static final String CONSOLE_REQUIRED = "Se necesita una terminal interactiva para usar este comando.";
     private static final String INPUT_CANCELLED = "Operación cancelada o lectura interrumpida.";
     private final CliArgumentParser parser;

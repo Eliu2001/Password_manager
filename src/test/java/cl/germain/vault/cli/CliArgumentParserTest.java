@@ -25,6 +25,13 @@ class CliArgumentParserTest {
         assertEquals(CliCommand.Type.DELETE,
                 parser.parse("delete", "--id", "00112233445566778899aabbccddeeff", "--vault", "safe.pvlt").type());
         assertEquals(CliCommand.Type.GENERATE, parser.parse("generate").type());
+        assertEquals(CliCommand.Type.SET_TOTP, parser.parse("set-totp", "--vault", "safe.pvlt", "--id",
+                "00112233445566778899aabbccddeeff").type());
+        assertEquals(CliCommand.Type.REMOVE_TOTP, parser.parse("remove-totp", "--vault", "safe.pvlt", "--id",
+                "00112233445566778899aabbccddeeff").type());
+        assertEquals(CliCommand.Type.TOTP, parser.parse("totp", "--vault", "safe.pvlt", "--id",
+                "00112233445566778899aabbccddeeff").type());
+        assertEquals(CliCommand.Type.UPGRADE, parser.parse("upgrade", "--vault", "safe.pvlt").type());
         assertEquals(CliCommand.DEFAULT_GENERATION_LENGTH, parser.parse("generate").generationLength());
         assertEquals(Path.of("safe.pvlt"), parser.parse("list", "--vault", "safe.pvlt").vaultPath());
     }
@@ -60,6 +67,10 @@ class CliArgumentParserTest {
         assertInvalid("generate", "--vault", "vault.pvlt");
         assertInvalid("generate", "--id", "00112233445566778899aabbccddeeff");
         assertInvalid("list", "--vault", "x", "--length", "20");
+        assertInvalid("upgrade", "--vault", "x", "--id", "00112233445566778899aabbccddeeff");
+        assertInvalid("totp", "--vault", "x");
+        assertInvalid("totp", "--vault", "x", "--id", "00112233445566778899AABBCCDDEEFF");
+        assertInvalid("set-totp", "--vault", "x", "--id", "00112233445566778899aabbccddeeff", "--extra");
     }
 
     @Test

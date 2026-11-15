@@ -7,6 +7,8 @@ seguridad del proyecto debe poder rastrearse hasta una amenaza de este archivo.
 
 ## 2. Activos
 - Contenido de cada entrada: sitio, usuario, contraseña y notas.
+- Secreto TOTP decodificado asociado a una entrada.
+- Código TOTP temporal generado para una cuenta.
 - Contraseña maestra.
 - Clave de cifrado derivada de la contraseña maestra.
 - Integridad del archivo de bóveda.
@@ -18,7 +20,7 @@ seguridad del proyecto debe poder rastrearse hasta una amenaza de este archivo.
 | Alguien obtiene el archivo de la bóveda (equipo robado, respaldo filtrado) | Completo | Todo el contenido va cifrado en un solo bloque con AES-256-GCM |
 | Fuerza bruta offline contra la contraseña maestra | Completo | Argon2id con parámetros costosos |
 | Modificación del archivo | Completo | La etiqueta de autenticación de GCM rechaza cualquier alteración |
-| Alguien mira por encima del hombro | Completo | La contraseña maestra se lee sin eco en pantalla |
+| Alguien mira por encima del hombro | Parcial | Contraseña maestra y secreto Base32 se leen sin eco; el código TOTP solicitado se muestra una vez en la consola interactiva y aún puede ser observado |
 | Uso del equipo con la bóveda abierta | Parcial | Autobloqueo y limpieza del portapapeles |
 | Dependencia comprometida | Parcial | Versiones fijadas y escaneo de dependencias en CI |
 
@@ -46,6 +48,9 @@ seguridad del proyecto debe poder rastrearse hasta una amenaza de este archivo.
 | Contenido | Un solo bloque cifrado, incluidos los nombres de sitio | Un atacante no sabe en qué servicios hay cuentas |
 | Escritura | Archivo temporal y luego renombrar; permisos 600 | Corrupción por caída a mitad de guardado, lectura por otros usuarios |
 | Aleatoriedad | Solo `SecureRandom` | Valores predecibles |
+| Secreto TOTP almacenado | Bytes decodificados, dentro del payload cifrado v2; 20–64 bytes | Robo del archivo de bóveda |
+| Cálculo TOTP | RFC 6238, HMAC-SHA-1, seis dígitos y paso fijo de 30 segundos | Generar códigos temporales para cuentas; no autentica el desbloqueo de la bóveda |
+| Canal CLI TOTP | Lectura Base32 sin eco; código solicitado solo por la consola interactiva privada | Evitar exposición accidental en argumentos, stdin, stdout redirigible y errores |
 
 Reglas de implementación asociadas:
 - La contraseña maestra se maneja como `char[]` y se borra tras usarla.
@@ -69,6 +74,12 @@ de seguridad para el alcance del proyecto.
   referencias, pero no se puede garantizar su borrado en memoria.
 - No hay recuperación: perder la contraseña maestra implica perder la bóveda.
 - No hay protección contra el reemplazo del archivo por una versión antigua.
+- TOTP es una función para cuentas guardadas, no un segundo factor para abrir la
+  bóveda. La privacidad del código durante su visualización depende de la
+  protección de la sesión de consola y del equipo.
+- El proveedor JDK puede conservar copias internas del secreto usadas por HMAC;
+  la aplicación borra los arreglos bajo su control, pero no promete borrar esas
+  copias internas.
 - La seguridad depende de una contraseña maestra fuerte: Argon2id encarece el
   ataque, no lo impide.
 

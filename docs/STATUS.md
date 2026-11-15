@@ -1,4 +1,4 @@
-# Estado del proyecto — 2026-11-12
+# Estado del proyecto — 2026-11-15
 
 ## Spec cerrada
 
@@ -21,16 +21,18 @@
 
 - **Completadas:** T01–T30. Servicio create/open/save, sesión, persistencia
   atómica, detección de cambios externos, pruebas de límites y matrices adversariales.
-- **Última verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 63 pruebas,
-  0 fallos y 1 omitida (Windows; symlink no disponible).
+- **Última verificación local de Spec 002:** `./mvnw.cmd verify` — **BUILD
+  SUCCESS**, 63 pruebas, 0 fallos y 1 omitida (Windows; symlink no disponible).
 - **Limitaciones de plataforma:** ejecución local en Windows; ACL del usuario
   actual comprobada; escritura y reemplazo atómico real pasaron en el filesystem
   temporal de Windows. El fallo de atomic move se simuló con inyección y comprobó
-  fail-closed, preservación del destino y limpieza temporal. El workflow
-  `.github/workflows/verify.yml` se ejecutó en GitHub Actions sobre Linux y terminó
-  en verde, cubriendo la verificación POSIX 0600 y la prueba de symlinks que se
-  omitía en Windows. No se conserva aquí el enlace ni el identificador de esa
-  ejecución.
+  fail-closed, preservación del destino y limpieza temporal. En Linux, el workflow
+  `.github/workflows/verify.yml` ejecutó estas pruebas en la revisión acumulada
+  de Spec 002/003: [run 1, ID 43654420072](https://github.com/Eliu2001/Password_manager/actions/runs/43654420072),
+  terminado en `success` el 2026-11-14. El mismo workflow para Spec 004 terminó
+  en `success`: [run 2, ID 43656670683](https://github.com/Eliu2001/Password_manager/actions/runs/43656670683),
+  el 2026-11-15. Ambos cubren filesystem Linux, incluidos permisos POSIX y
+  symlinks.
 - **Formato:** `docs/FORMAT.md` actualizado. El AAD son los primeros 34 bytes
   exactos del encabezado; nonce protegido por GCM y longitud validada
   estructuralmente, según la decisión aprobada en Spec 002.
@@ -79,15 +81,17 @@
 - **Errores:** errores de argumentos separados de fallos criptográficos/de datos; errores de clave, AAD o ciphertext no deben revelar la causa concreta ni devolver plaintext parcial.
 - **Límite de memoria:** `docs/THREAT_MODEL.md` documenta que Java/JDK puede conservar copias no borrables de clave en `Cipher`/`SecretKeySpec` y un `String` transitorio en normalización NFC de entradas no normalizadas.
 
-## Bloqueos y preguntas abiertas
+## Pendientes actuales
 
-- No hay decisiones de seguridad pendientes para continuar `crypto-core` según la spec y aprobaciones actuales.
-- Spec 002 se cerró el 2026-11-12. POSIX 0600 y creación de symlinks quedan pendientes de CI/plataforma adecuada; no se marcaron como verificados.
-- En Spec 001, T01–T23 están completadas. El tiempo de derivación medido es puntual y dependiente del equipo; no es una prueba automática.
-
-## Siguiente paso al cierre de Spec 002
-
-- **Siguiente paso en ese momento:** decidir el alcance de la próxima spec; el cierre no la iniciaba automáticamente. Spec 003 fue aprobada después y su estado se registra a continuación.
+- **CI Linux para Spec 005:** aún no ejecutado para la implementación TOTP que
+  está en el árbol de trabajo local. El run más reciente de GitHub es el de Spec
+  004 enlazado arriba; el run de TOTP debe registrarse al publicar estos cambios.
+- **Trazabilidad histórica:** están registrados los IDs/URLs de las ejecuciones
+  Linux citadas para Specs 002/003 y 004.
+- **Producto/entrega:** `AGENTS.md` conserva decisiones de convenciones sin
+  cerrar (comando de ejecución y lint/formato); no hay guía
+  de uso `README.md` ni artefacto CLI autocontenido. Resolverlo es una tarea de
+  entrega, no un bloqueo de las Specs 001–005.
 
 ## Spec 003 — cli-mvp
 
@@ -124,3 +128,24 @@
 - **Seguridad y arquitectura:** sin dependencias nuevas ni cambios al formato v1
   o `docs/THREAT_MODEL.md`; el arreglo generado se limpia en éxito y al fallar la
   impresión. `generator` no depende de otros paquetes del proyecto.
+
+## Spec 005 — totp
+
+- **Estado:** cerrada el 2026-11-15; T01–T35 completadas; AC-1–AC-10 cubiertos.
+- **Spec/plan/tareas:** `docs/specs/005-totp/`.
+- **Alcance implementado:** generación TOTP RFC 6238 SHA-1 y decodificación
+  Base32; secretos opcionales borrables en el modelo; encabezado/payload v2,
+  creación v2, persistencia v1 sin migración implícita y conversión explícita;
+  CLI `set-totp`, `remove-totp`, `totp` y `upgrade`.
+- **Formato/amenazas:** `docs/FORMAT.md` documenta v1/v2 y marca v2 como formato
+  actual de creación. No se añadieron dependencias. `docs/THREAT_MODEL.md` se
+  actualizó después con aprobación explícita del usuario para incluir secreto y
+  uso TOTP, su canal de presentación y las limitaciones de memoria.
+- **Verificación:** `./mvnw.cmd verify` — **BUILD SUCCESS**, 103 pruebas, 0
+  fallos y 1 omitida.
+- **Plataforma/limitaciones:** verificación local en Windows. La prueba de
+  symlink se omitió porque no está disponible en este entorno. La conversión
+  comprobó un reemplazo correcto y simuló el fallo de movimiento atómico mediante
+  el hook de prueba; no se afirma que un filesystem real haya rechazado el move.
+  Las copias internas que `Mac`/proveedor JDK pueda crear no son borrables por la
+  aplicación. No se ejecutó CI Linux como parte de esta tarea.

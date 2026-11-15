@@ -20,7 +20,10 @@ final class VaultPayloadCodec {
     private static final int MAX_PAYLOAD_LENGTH_BYTES =
             MAX_FILE_LENGTH_BYTES - HEADER_LENGTH_BYTES - GCM_TAG_LENGTH_BYTES;
 
-    byte[] encode(Vault vault) {
+    byte[] encode(Vault vault) { return encode(vault, 1); }
+
+    byte[] encode(Vault vault, int version) {
+        if (version != 1 && version != 2) throw new IllegalArgumentException("Unsupported payload version");
         Objects.requireNonNull(vault, "vault");
         List<Entry> entries = vault.list();
         if ((long) entries.size() > UINT32_MAX) {
@@ -32,7 +35,7 @@ final class VaultPayloadCodec {
         try {
             long totalLength = Integer.BYTES;
             for (Entry entry : entries) {
-                EncodedEntry encoded = encodeEntry(entry);
+                EncodedEntry encoded = encodeEntry(entry, version);
                 encodedEntries.add(encoded);
                 totalLength = Math.addExact(totalLength, encoded.encodedLength());
                 if (totalLength > MAX_PAYLOAD_LENGTH_BYTES) {
@@ -51,6 +54,10 @@ final class VaultPayloadCodec {
                 putField(buffer, entry.username);
                 putField(buffer, entry.password);
                 putField(buffer, entry.notes);
+                if (version == 2) {
+                    buffer.putInt(entry.totpSecret.length);
+                    buffer.put(entry.totpSecret);
+                }
             }
             return payload;
         } catch (ArithmeticException exception) {
@@ -68,7 +75,7 @@ final class VaultPayloadCodec {
         }
     }
 
-    private static EncodedEntry encodeEntry(Entry entry) {
+    private static EncodedEntry encodeEntry(Entry entry, int version) {
         long createdAtMillis = entry.createdAt().toEpochMilli();
         long updatedAtMillis = entry.updatedAt().toEpochMilli();
         char[] passwordChars = entry.password();
@@ -77,19 +84,22 @@ final class VaultPayloadCodec {
         byte[] username = null;
         byte[] password = null;
         byte[] notes = null;
+        byte[] totpSecret = null;
         try {
             id = entry.id();
             service = encodeUtf8(entry.service());
             username = encodeUtf8(entry.username());
             password = encodeUtf8(passwordChars);
             notes = encodeUtf8(entry.notes());
+            totpSecret = version == 2 ? entry.totpSecret() : new byte[0];
             EncodedEntry encodedEntry = new EncodedEntry(id, createdAtMillis, updatedAtMillis,
-                    service, username, password, notes);
+                    service, username, password, notes, totpSecret, version == 2);
             id = null;
             service = null;
             username = null;
             password = null;
             notes = null;
+            totpSecret = null;
             return encodedEntry;
         } finally {
             Arrays.fill(passwordChars, '\0');
@@ -98,6 +108,7 @@ final class VaultPayloadCodec {
             clear(username);
             clear(password);
             clear(notes);
+            clear(totpSecret);
         }
     }
 
@@ -128,9 +139,12 @@ final class VaultPayloadCodec {
         private final byte[] username;
         private final byte[] password;
         private final byte[] notes;
+        private final byte[] totpSecret;
+        private final boolean version2;
 
         private EncodedEntry(byte[] id, long createdAtMillis, long updatedAtMillis,
-                             byte[] service, byte[] username, byte[] password, byte[] notes) {
+                             byte[] service, byte[] username, byte[] password, byte[] notes,
+                             byte[] totpSecret, boolean version2) {
             this.id = id;
             this.createdAtMillis = createdAtMillis;
             this.updatedAtMillis = updatedAtMillis;
@@ -138,14 +152,14 @@ final class VaultPayloadCodec {
             this.username = username;
             this.password = password;
             this.notes = notes;
+            this.totpSecret = totpSecret == null ? new byte[0] : totpSecret;
+            this.version2 = version2;
         }
 
         private long encodedLength() {
-            return Math.addExact(2L * Long.BYTES + ID_LENGTH_BYTES,
-                    Math.addExact(4L * Integer.BYTES,
-                            Math.addExact(service.length,
-                                    Math.addExact(username.length,
-                                            Math.addExact(password.length, notes.length)))));
+            long fixed = 2L * Long.BYTES + ID_LENGTH_BYTES + 4L * Integer.BYTES;
+            long fields = (long) service.length + username.length + password.length + notes.length;
+            return Math.addExact(fixed + fields, version2 ? Integer.BYTES + totpSecret.length : 0);
         }
 
         private void clear() {
@@ -154,6 +168,7 @@ final class VaultPayloadCodec {
             Arrays.fill(username, (byte) 0);
             Arrays.fill(password, (byte) 0);
             Arrays.fill(notes, (byte) 0);
+            Arrays.fill(totpSecret, (byte) 0);
         }
     }
 }

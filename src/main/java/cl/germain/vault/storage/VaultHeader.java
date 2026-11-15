@@ -35,6 +35,10 @@ final class VaultHeader {
     }
 
     static byte[] createAadPrefix(Argon2Parameters parameters, byte[] salt) {
+        return createAadPrefix(parameters, salt, 1);
+    }
+
+    static byte[] createAadPrefix(Argon2Parameters parameters, byte[] salt, int version) {
         Objects.requireNonNull(parameters, "parameters");
         Objects.requireNonNull(salt, "salt");
         if (salt.length != SALT_LENGTH_BYTES) {
@@ -42,7 +46,8 @@ final class VaultHeader {
         }
         ByteBuffer prefix = ByteBuffer.allocate(AAD_LENGTH_BYTES).order(ByteOrder.BIG_ENDIAN);
         prefix.put(MAGIC);
-        prefix.putShort((short) VERSION);
+        if (version != 1 && version != 2) throw new IllegalArgumentException("Unsupported vault version");
+        prefix.putShort((short) version);
         prefix.putInt(parameters.memoryKiB());
         prefix.putInt(parameters.iterations());
         prefix.putInt(parameters.parallelism());
@@ -53,7 +58,7 @@ final class VaultHeader {
     static byte[] assemble(byte[] aadPrefix, byte[] nonce, long ciphertextLength) {
         Objects.requireNonNull(aadPrefix, "aadPrefix");
         Objects.requireNonNull(nonce, "nonce");
-        if (aadPrefix.length != AAD_LENGTH_BYTES || !hasV1Prefix(aadPrefix)) {
+        if (aadPrefix.length != AAD_LENGTH_BYTES || !hasSupportedPrefix(aadPrefix)) {
             throw new IllegalArgumentException("Header AAD prefix is invalid");
         }
         if (nonce.length != NONCE_LENGTH_BYTES) {
@@ -83,7 +88,7 @@ final class VaultHeader {
         }
 
         int version = Short.toUnsignedInt(buffer.getShort());
-        if (version != VERSION) {
+        if (version != 1 && version != 2) {
             throw new UnsupportedVaultFormatException();
         }
 
@@ -143,6 +148,8 @@ final class VaultHeader {
         return ciphertextLength;
     }
 
+    int version() { return Short.toUnsignedInt(ByteBuffer.wrap(encoded).order(ByteOrder.BIG_ENDIAN).getShort(4)); }
+
     void validateFileLength(long completeFileLength) {
         if (completeFileLength > 16L * 1024 * 1024
                 || completeFileLength != HEADER_LENGTH_BYTES + ciphertextLength) {
@@ -150,12 +157,12 @@ final class VaultHeader {
         }
     }
 
-    private static boolean hasV1Prefix(byte[] prefix) {
+    private static boolean hasSupportedPrefix(byte[] prefix) {
         ByteBuffer buffer = ByteBuffer.wrap(prefix).order(ByteOrder.BIG_ENDIAN);
         byte[] magic = new byte[MAGIC.length];
         buffer.get(magic);
-        boolean valid = Arrays.equals(magic, MAGIC)
-                && Short.toUnsignedInt(buffer.getShort()) == VERSION;
+        int version = Short.toUnsignedInt(buffer.getShort());
+        boolean valid = Arrays.equals(magic, MAGIC) && (version == 1 || version == 2);
         clear(magic);
         return valid;
     }

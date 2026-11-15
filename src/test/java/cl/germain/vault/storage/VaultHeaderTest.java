@@ -17,6 +17,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VaultHeaderTest {
+    @Test void parsesV1AndV2HeadersAndKeepsVersionInExactAadPrefix() {
+        byte[] salt = sequence(16);
+        byte[] nonce = sequence(12);
+        Argon2Parameters parameters = new Argon2Parameters(19_456, 2, 1);
+        for (int version : new int[] {1, 2}) {
+            byte[] prefix = VaultHeader.createAadPrefix(parameters, salt, version);
+            byte[] headerBytes = VaultHeader.assemble(prefix, nonce, 16);
+            VaultHeader parsed = VaultHeader.parse(headerBytes);
+            assertEquals(version, parsed.version());
+            assertArrayEquals(prefix, parsed.aad());
+            assertEquals(VaultHeader.HEADER_LENGTH_BYTES, parsed.encoded().length);
+            Arrays.fill(prefix, (byte) 0); Arrays.fill(headerBytes, (byte) 0);
+        }
+        Arrays.fill(salt, (byte) 0); Arrays.fill(nonce, (byte) 0);
+    }
+
     @Test
     void assemblesTheExactFiftyByteV1Header() {
         byte[] salt = sequence(16);
@@ -79,7 +95,7 @@ class VaultHeaderTest {
 
         try {
             byte[] unsupported = validHeader.clone();
-            unsupported[5] = 2;
+            unsupported[5] = 3;
             assertThrows(UnsupportedVaultFormatException.class,
                     () -> VaultHeader.parse(unsupported));
 

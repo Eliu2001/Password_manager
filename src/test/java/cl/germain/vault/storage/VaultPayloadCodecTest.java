@@ -93,6 +93,58 @@ class VaultPayloadCodecTest {
         }
     }
 
+    @Test void v2RoundTripAddsOptionalTotpFieldAndRejectsMalformedSecretLengths() {
+        byte[] id = new byte[16]; id[0] = 4;
+        byte[] secret = new byte[20]; Arrays.fill(secret, (byte) 11);
+        char[] password = {'s', 'y', 'n'};
+        byte[] payload;
+        try (Vault source = new Vault()) {
+            source.restoreEntry(id, Instant.ofEpochMilli(10), Instant.ofEpochMilli(20),
+                    "service", "user", password, "", secret);
+            payload = codec.encode(source, 2);
+        } finally { Arrays.fill(password, '\0'); Arrays.fill(secret, (byte) 0); }
+        try (Vault restored = parser.parse(payload, 2)) {
+            assertArrayEquals(id, restored.list().get(0).id());
+            byte[] actual = restored.totpSecret(id).orElseThrow();
+            assertEquals(20, actual.length);
+            for (byte value : actual) assertEquals(11, value);
+            Arrays.fill(actual, (byte) 0);
+        }
+        byte[] badLength = payload.clone();
+        ByteBuffer.wrap(badLength).putInt(badLength.length - 24, 19);
+        byte[] oversizedLength = payload.clone();
+        ByteBuffer.wrap(oversizedLength).putInt(oversizedLength.length - 24, 0xffff_ffff);
+        byte[] trailing = Arrays.copyOf(payload, payload.length + 1);
+        byte[] truncated = Arrays.copyOf(payload, payload.length - 1);
+        try {
+            assertThrows(IllegalArgumentException.class, () -> parser.parse(badLength, 2));
+            assertThrows(IllegalArgumentException.class, () -> parser.parse(oversizedLength, 2));
+            assertThrows(IllegalArgumentException.class, () -> parser.parse(trailing, 2));
+            assertThrows(IllegalArgumentException.class, () -> parser.parse(truncated, 2));
+            assertThrows(IllegalArgumentException.class, () -> parser.parse(payload, 1));
+        } finally {
+            Arrays.fill(id, (byte) 0);
+            Arrays.fill(payload, (byte) 0); Arrays.fill(badLength, (byte) 0);
+            Arrays.fill(oversizedLength, (byte) 0); Arrays.fill(trailing, (byte) 0);
+            Arrays.fill(truncated, (byte) 0);
+        }
+    }
+
+    @Test void v2RoundTripsEntryWithoutTotpAsZeroLength() {
+        byte[] id = new byte[16];
+        char[] password = {'x'};
+        byte[] payload;
+        try (Vault vault = new Vault()) {
+            vault.restoreEntry(id, Instant.ofEpochMilli(1), Instant.ofEpochMilli(2),
+                    "service", "user", password, "");
+            payload = codec.encode(vault, 2);
+        } finally { Arrays.fill(password, '\0'); }
+        try (Vault parsed = parser.parse(payload, 2)) {
+            assertEquals(1, parsed.list().size());
+            assertEquals(java.util.Optional.empty(), parsed.totpSecret(id));
+        } finally { Arrays.fill(id, (byte) 0); Arrays.fill(payload, (byte) 0); }
+    }
+
     @Test
     void rejectsImpossibleCountsTrailingBytesAndInvalidUtf8() {
         assertThrows(IllegalArgumentException.class, () -> parser.parse(new byte[]{0, 0, 0, 1}));

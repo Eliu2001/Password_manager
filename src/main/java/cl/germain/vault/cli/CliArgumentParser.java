@@ -60,7 +60,9 @@ public final class CliArgumentParser {
             return new CliCommand(type, null, null, generationLength);
         }
 
-        boolean needsId = type == CliCommand.Type.SHOW || type == CliCommand.Type.DELETE;
+        boolean needsId = type == CliCommand.Type.SHOW || type == CliCommand.Type.DELETE
+                || type == CliCommand.Type.SET_TOTP || type == CliCommand.Type.REMOVE_TOTP
+                || type == CliCommand.Type.TOTP;
         if (!sawVault || sawId != needsId || sawLength) {
             throw usageError();
         }
@@ -107,6 +109,10 @@ public final class CliArgumentParser {
             case "show" -> CliCommand.Type.SHOW;
             case "delete" -> CliCommand.Type.DELETE;
             case "generate" -> CliCommand.Type.GENERATE;
+            case "set-totp" -> CliCommand.Type.SET_TOTP;
+            case "remove-totp" -> CliCommand.Type.REMOVE_TOTP;
+            case "totp" -> CliCommand.Type.TOTP;
+            case "upgrade" -> CliCommand.Type.UPGRADE;
             default -> throw usageError();
         };
     }

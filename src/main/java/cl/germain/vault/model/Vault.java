@@ -6,9 +6,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.NoSuchElementException;
 
 /** Ordered in-memory collection of vault entries. */
 public final class Vault implements AutoCloseable {
@@ -59,6 +59,15 @@ public final class Vault implements AutoCloseable {
         entries.add(new Entry(id, createdAt, updatedAt, service, username, password, notes));
     }
 
+    public synchronized void restoreEntry(byte[] id, Instant createdAt, Instant updatedAt,
+                                          String service, String username, char[] password,
+                                          String notes, byte[] totpSecret) {
+        ensureOpen();
+        validateId(id);
+        if (containsId(id)) throw new IllegalArgumentException("Duplicate entry ID");
+        entries.add(Entry.restore(id, createdAt, updatedAt, service, username, password, notes, totpSecret));
+    }
+
     /** Returns the matching entry, if present. The entry exposes no mutators. */
     public synchronized Optional<Entry> get(byte[] id) {
         ensureOpen();
@@ -79,6 +88,25 @@ public final class Vault implements AutoCloseable {
         Entry entry = get(id).orElseThrow(() -> new NoSuchElementException("Entry not found"));
         entry.update(service, username, password, notes,
                 Instant.ofEpochMilli(clock.instant().toEpochMilli()));
+    }
+
+    public synchronized void setTotpSecret(byte[] id, byte[] secret) {
+        ensureOpen();
+        Entry entry = get(id).orElseThrow(() -> new NoSuchElementException("Entry not found"));
+        entry.setTotpSecret(secret);
+    }
+
+    public synchronized Optional<byte[]> totpSecret(byte[] id) {
+        ensureOpen();
+        Entry entry = get(id).orElseThrow(() -> new NoSuchElementException("Entry not found"));
+        byte[] secret = entry.totpSecret();
+        return Optional.ofNullable(secret);
+    }
+
+    public synchronized boolean removeTotpSecret(byte[] id) {
+        ensureOpen();
+        Entry entry = get(id).orElseThrow(() -> new NoSuchElementException("Entry not found"));
+        return entry.removeTotpSecret();
     }
 
     /** Removes an entry by ID and clears its owned password copy. */

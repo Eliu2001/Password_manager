@@ -32,6 +32,152 @@ class VaultStorageTest {
         java.util.Arrays.fill(master, '\0');
     }
 
+    @Test void legacyV1FixtureOpensSavesAndReopensWithoutChangingVersionOrSchema() throws Exception {
+        Path file = directory.resolve("legacy-v1.dat");
+        char[] master = "synthetic v1 master".toCharArray();
+        writeV1Fixture(file, master);
+        byte[] before = Files.readAllBytes(file);
+        byte[] id;
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            assertEquals(1, session.version());
+            assertEquals(1, session.vault().list().size());
+            id = session.vault().list().get(0).id();
+            session.vault().add("new service", "new user", "new synthetic password".toCharArray(), "");
+            session.save();
+            assertEquals(1, session.version());
+        }
+        byte[] after = Files.readAllBytes(file);
+        assertEquals(1, ByteBuffer.wrap(after).order(ByteOrder.BIG_ENDIAN).getShort(4));
+        assertFalse(java.util.Arrays.equals(before, after));
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            assertEquals(1, session.version());
+            assertEquals(2, session.vault().list().size());
+            assertArrayEquals(id, session.vault().list().get(0).id());
+        }
+        java.util.Arrays.fill(master, '\0');
+        VaultStorage.clear(before, after, id);
+    }
+
+    @Test void explicitUpgradeConvertsV1AtomicallyAndLeavesSessionConsistentOnFailure() throws Exception {
+        Path file = directory.resolve("upgrade-v1.dat");
+        char[] master = "synthetic upgrade master".toCharArray();
+        writeV1Fixture(file, master);
+        byte[] original = Files.readAllBytes(file);
+        VaultStorage failing = new VaultStorage(new cl.germain.vault.crypto.CryptoService(),
+                temp -> { throw new java.nio.file.AtomicMoveNotSupportedException(
+                        temp.toString(), "vault", "synthetic unsupported move"); });
+        try (VaultSession session = failing.open(file, master)) {
+            assertThrows(IOException.class, session::upgradeToV2);
+            assertEquals(1, session.version());
+            assertArrayEquals(original, Files.readAllBytes(file));
+            assertEquals(1, session.vault().list().size());
+            try (var files = Files.list(directory)) { assertEquals(2, files.count()); }
+        }
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            session.upgradeToV2();
+            assertEquals(2, session.version());
+        }
+        byte[] upgraded = Files.readAllBytes(file);
+        assertEquals(2, ByteBuffer.wrap(upgraded).order(ByteOrder.BIG_ENDIAN).getShort(4));
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            assertEquals(2, session.version());
+            assertEquals(1, session.vault().list().size());
+            assertThrows(IllegalStateException.class, session::upgradeToV2);
+        }
+        java.util.Arrays.fill(master, '\0');
+        VaultStorage.clear(original, upgraded);
+    }
+
+    @Test void externalChangePreventsUpgradeAndPreservesExternallyWrittenBytes() throws Exception {
+        Path file = directory.resolve("upgrade-external.dat");
+        char[] master = "synthetic external upgrade".toCharArray();
+        writeV1Fixture(file, master);
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            byte[] external = Files.readAllBytes(file);
+            external[external.length - 1] ^= 1;
+            Files.write(file, external);
+            assertThrows(IOException.class, session::upgradeToV2);
+            assertEquals(1, session.version());
+            assertArrayEquals(external, Files.readAllBytes(file));
+            VaultStorage.clear(external);
+        }
+        java.util.Arrays.fill(master, '\0');
+    }
+
+    @Test void upgradeRejectsV2PayloadOverMaximumWithoutReplacingV1() throws Exception {
+        Path file = directory.resolve("upgrade-too-large.dat");
+        char[] master = "synthetic maximum upgrade".toCharArray();
+        writeValidMaximumFile(file, master);
+        byte[] original = Files.readAllBytes(file);
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            assertThrows(IllegalArgumentException.class, session::upgradeToV2);
+            assertEquals(1, session.version());
+            assertArrayEquals(original, Files.readAllBytes(file));
+            assertEquals(1, session.vault().list().size());
+        }
+        java.util.Arrays.fill(master, '\0');
+        VaultStorage.clear(original);
+    }
+
+    @Test void v2TotpSecretSurvivesReopenAndNeverAppearsInVaultFile() throws Exception {
+        Path file = directory.resolve("totp-v2.dat");
+        char[] master = "synthetic v2 master".toCharArray();
+        byte[] secret = new byte[20];
+        java.util.Arrays.fill(secret, (byte) 0x5a);
+        byte[] id;
+        try (VaultSession session = new VaultStorage().create(file, master)) {
+            assertEquals(2, session.version());
+            char[] entryPassword = "synthetic password".toCharArray();
+            id = session.vault().add("service", "user", entryPassword, "");
+            java.util.Arrays.fill(entryPassword, '\0');
+            session.vault().setTotpSecret(id, secret);
+            session.save();
+        }
+        byte[] fileBytes = Files.readAllBytes(file);
+        assertFalse(contains(fileBytes, secret));
+        try (VaultSession session = new VaultStorage().open(file, master)) {
+            byte[] loaded = session.vault().totpSecret(id).orElseThrow();
+            assertArrayEquals(secret, loaded);
+            VaultStorage.clear(loaded);
+        }
+        java.util.Arrays.fill(master, '\0');
+        VaultStorage.clear(secret, fileBytes, id);
+    }
+
+    private static boolean contains(byte[] haystack, byte[] needle) {
+        outer: for (int i = 0; i <= haystack.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) if (haystack[i + j] != needle[j]) continue outer;
+            return true;
+        }
+        return false;
+    }
+
+    private static void writeV1Fixture(Path file, char[] master) throws Exception {
+        cl.germain.vault.crypto.CryptoService crypto = new cl.germain.vault.crypto.CryptoService();
+        cl.germain.vault.crypto.Argon2Parameters params = new cl.germain.vault.crypto.Argon2Parameters(19_456, 2, 1);
+        byte[] salt = crypto.generateSalt();
+        byte[] prefix = VaultHeader.createAadPrefix(params, salt, 1);
+        cl.germain.vault.model.Vault vault = new cl.germain.vault.model.Vault();
+        byte[] payload = null, nonce = null, cipher = null, header = null, bytes = null;
+        try {
+            char[] entryPassword = "synthetic fixture password".toCharArray();
+            try { vault.add("fixture service", "fixture user", entryPassword, "fixture notes"); }
+            finally { java.util.Arrays.fill(entryPassword, '\0'); }
+            payload = new VaultPayloadCodec().encode(vault, 1);
+            try (var key = crypto.deriveKey(master, salt, params)) {
+                var encrypted = crypto.encrypt(key, payload, prefix);
+                nonce = encrypted.nonce(); cipher = encrypted.ciphertextAndTag();
+            }
+            header = VaultHeader.assemble(prefix, nonce, cipher.length);
+            bytes = VaultStorage.join(header, cipher);
+            Files.write(file, bytes);
+            PrivateFilePermissions.ensurePrivateFile(file);
+        } finally {
+            vault.close();
+            VaultStorage.clear(salt, prefix, payload, nonce, cipher, header, bytes);
+        }
+    }
+
     @Test void vaultLockAndSaveTemporaryArePrivateOnPosix() throws Exception {
         Path file = directory.resolve("posix-permissions.dat");
         char[] master = "synthetic test master".toCharArray();
@@ -182,7 +328,7 @@ class VaultStorageTest {
             byte[] malformed = valid.clone();
             switch (mode) {
                 case 0 -> malformed[0] ^= 1; // wrong magic
-                case 1 -> malformed[5] = 2; // unsupported version
+                case 1 -> malformed[5] = 3; // unsupported version
                 case 2 -> malformed = java.util.Arrays.copyOf(malformed, malformed.length - 1);
                 case 3 -> malformed = java.util.Arrays.copyOf(malformed, malformed.length + 1);
                 case 4 -> ByteBuffer.wrap(malformed).order(ByteOrder.BIG_ENDIAN)

@@ -14,6 +14,7 @@ public final class Entry {
     private String service;
     private String username;
     private char[] password;
+    private byte[] totpSecret;
     private String notes;
     private boolean closed;
 
@@ -37,6 +38,19 @@ public final class Entry {
                                 String service, String username, char[] password,
                                 String notes) {
         return new Entry(id, createdAt, updatedAt, service, username, password, notes);
+    }
+
+    public static Entry restore(byte[] id, Instant createdAt, Instant updatedAt,
+                                String service, String username, char[] password,
+                                String notes, byte[] totpSecret) {
+        Entry entry = new Entry(id, createdAt, updatedAt, service, username, password, notes);
+        try {
+            if (totpSecret != null && totpSecret.length != 0) entry.setTotpSecret(totpSecret);
+            return entry;
+        } catch (RuntimeException failure) {
+            entry.clearPassword();
+            throw failure;
+        }
     }
 
     public byte[] id() {
@@ -69,6 +83,32 @@ public final class Entry {
         return notes;
     }
 
+    public synchronized byte[] totpSecret() {
+        ensureOpen();
+        return totpSecret == null ? null : totpSecret.clone();
+    }
+
+    synchronized void setTotpSecret(byte[] secret) {
+        ensureOpen();
+        Objects.requireNonNull(secret, "secret");
+        if (secret.length < 20 || secret.length > 64) throw new IllegalArgumentException("TOTP secret length is invalid");
+        byte[] copy = secret.clone();
+        clearTotpSecret();
+        totpSecret = copy;
+    }
+
+    synchronized boolean removeTotpSecret() {
+        ensureOpen();
+        if (totpSecret == null) return false;
+        clearTotpSecret();
+        return true;
+    }
+
+    private void clearTotpSecret() {
+        if (totpSecret != null) Arrays.fill(totpSecret, (byte) 0);
+        totpSecret = null;
+    }
+
     synchronized void update(String newService, String newUsername, char[] newPassword,
                              String newNotes, Instant modifiedAt) {
         ensureOpen();
@@ -89,6 +129,7 @@ public final class Entry {
     synchronized void clearPassword() {
         if (!closed) {
             Arrays.fill(password, '\0');
+            clearTotpSecret();
             closed = true;
         }
     }

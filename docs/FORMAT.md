@@ -1,5 +1,8 @@
 # Formato de archivo de bóveda
 
+**Versión actual para bóvedas nuevas: v2.** Las bóvedas v1 siguen siendo
+legibles y guardables en v1; solo el comando explícito `upgrade` las convierte.
+
 ## Versión 1
 
 El archivo v1 consta de un encabezado binario fijo de 50 bytes seguido
@@ -78,3 +81,28 @@ entradas parciales.
 
 La definición normativa de implementación está en
 `docs/specs/002-vault-storage/spec.md`.
+
+## Versión 2
+
+v2 conserva el encabezado fijo de 50 bytes, los offsets, parámetros, tamaños y
+la estructura de cifrado de v1; el campo uint16 de versión en offset 4 contiene
+`2`. El AAD son los primeros 34 bytes exactos del encabezado e incluye ese valor
+de versión. La autenticación no permite interpretar payload v1 como v2 ni al
+revés. Se mantienen AES-256-GCM, nonce de 12 bytes y etiqueta de 128 bits.
+
+El payload mantiene el contador y los campos v1 en el mismo orden. Al final de
+cada registro se agrega:
+
+1. Longitud del secreto TOTP: uint32 big-endian.
+2. Bytes del secreto TOTP decodificado, inmediatamente después.
+
+Longitud cero significa que la entrada no tiene TOTP; si no es cero, el tamaño
+debe estar entre 20 y 64 bytes. No hay flag adicional ni se almacena la
+representación Base32. El lector rechaza truncamientos, longitudes fuera de
+rango, bytes sobrantes, IDs duplicados y cualquier estructura incompleta sin
+devolver entradas parciales. El límite de 16 MiB aplica al archivo completo,
+incluidos encabezado y etiqueta GCM.
+
+La creación actual escribe v2. Abrir y guardar v1 conserva v1. La conversión
+v1→v2 solo ocurre por acción explícita confirmada y usa el reemplazo atómico
+existente; no hay migración implícita.

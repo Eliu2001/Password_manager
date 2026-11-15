@@ -29,7 +29,7 @@ entradas. Después: generador de contraseñas, autobloqueo, 2FA (TOTP).
   `crypto`, `model`, `storage`, `generator`, `totp`, `cli`.
 - `crypto` no depende de ningún otro paquete; el resto depende de él.
 - Código, nombres, comentarios y commits en inglés; mensajes que ve el usuario
-  en español. `<por definir: confirma si aplicas la misma regla que en study-manager>`
+  en español.
 - Pruebas con JUnit 5, en el mismo paquete que la clase probada.
 
 ## Reglas

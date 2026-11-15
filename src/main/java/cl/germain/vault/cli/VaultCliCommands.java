@@ -6,6 +6,8 @@ import cl.germain.vault.model.Entry;
 import cl.germain.vault.model.Vault;
 import cl.germain.vault.storage.VaultSession;
 import cl.germain.vault.storage.VaultStorage;
+import cl.germain.vault.totp.Base32;
+import cl.germain.vault.totp.TotpGenerator;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.IntFunction;
+import java.time.Clock;
 
 /** Interactive command implementations backed by encrypted vault storage. */
 public final class VaultCliCommands implements CliCommandHandler {
@@ -20,6 +23,7 @@ public final class VaultCliCommands implements CliCommandHandler {
     private final CliConsole console;
     private final VaultStorage storage;
     private final IntFunction<char[]> passwordGenerator;
+    private final Clock clock;
 
     public VaultCliCommands(CliConsole console, VaultStorage storage) {
         this(console, storage, new PasswordGenerator());
@@ -30,9 +34,14 @@ public final class VaultCliCommands implements CliCommandHandler {
     }
 
     VaultCliCommands(CliConsole console, VaultStorage storage, IntFunction<char[]> passwordGenerator) {
+        this(console, storage, passwordGenerator, Clock.systemUTC());
+    }
+
+    VaultCliCommands(CliConsole console, VaultStorage storage, IntFunction<char[]> passwordGenerator, Clock clock) {
         this.console = Objects.requireNonNull(console);
         this.storage = Objects.requireNonNull(storage);
         this.passwordGenerator = Objects.requireNonNull(passwordGenerator);
+        this.clock = Objects.requireNonNull(clock);
     }
 
     @Override
@@ -44,8 +53,95 @@ public final class VaultCliCommands implements CliCommandHandler {
             case SHOW -> show(command);
             case DELETE -> delete(command);
             case GENERATE -> generate(command);
+            case SET_TOTP -> setTotp(command);
+            case REMOVE_TOTP -> removeTotp(command);
+            case TOTP -> totp(command);
+            case UPGRADE -> upgrade(command);
             case HELP -> CliExitStatus.SUCCESS;
         };
+    }
+
+    private CliExitStatus setTotp(CliCommand command) throws IOException, DecryptionException, InterruptedException {
+        char[] master = null, first = null, second = null;
+        byte[] decoded = null;
+        try {
+            master = console.readPassword("Contraseña maestra: ");
+            if (master == null) return inputCancelled();
+            try (VaultSession session = storage.open(command.vaultPath(), master)) {
+                if (session.version() != 2) { console.printError("Ejecute upgrade antes de gestionar TOTP."); return CliExitStatus.ERROR; }
+                var entry = session.vault().get(command.entryId());
+                if (entry.isEmpty()) { console.printError("No se encontró la entrada solicitada."); return CliExitStatus.ERROR; }
+                first = console.readPassword("Secreto TOTP Base32: ");
+                if (first == null) return inputCancelled();
+                second = console.readPassword("Repita el secreto TOTP: ");
+                if (second == null) return inputCancelled();
+                if (!Arrays.equals(first, second)) { console.printError("Los secretos no coinciden."); return CliExitStatus.ERROR; }
+                decoded = Base32.decode(first);
+                byte[] old = session.vault().totpSecret(command.entryId()).orElse(null);
+                if (old != null) {
+                    clear(old);
+                    if (!"sí".equals(console.readLine("¿Reemplazar el secreto TOTP? Escriba sí para confirmar: "))) return CliExitStatus.CANCELLED;
+                }
+                session.vault().setTotpSecret(command.entryId(), decoded);
+                session.save();
+            }
+            console.printOutput("Secreto TOTP guardado.");
+            return CliExitStatus.SUCCESS;
+        } finally { clear(master, first, second); clear(decoded); }
+    }
+
+    private CliExitStatus removeTotp(CliCommand command) throws IOException, DecryptionException, InterruptedException {
+        char[] master = null;
+        byte[] secret = null;
+        try {
+            master = console.readPassword("Contraseña maestra: ");
+            if (master == null) return inputCancelled();
+            try (VaultSession session = storage.open(command.vaultPath(), master)) {
+                if (session.version() != 2) { console.printError("Ejecute upgrade antes de gestionar TOTP."); return CliExitStatus.ERROR; }
+                secret = session.vault().totpSecret(command.entryId()).orElse(null);
+                if (secret == null) { console.printError("La entrada no tiene secreto TOTP."); return CliExitStatus.ERROR; }
+                if (!"sí".equals(console.readLine("¿Retirar el secreto TOTP? Escriba sí para confirmar: "))) return CliExitStatus.CANCELLED;
+                session.vault().removeTotpSecret(command.entryId());
+                session.save();
+            }
+            console.printOutput("Secreto TOTP retirado.");
+            return CliExitStatus.SUCCESS;
+        } finally { clear(master); clear(secret); }
+    }
+
+    private CliExitStatus totp(CliCommand command) throws IOException, DecryptionException, InterruptedException {
+        char[] master = null, code = null;
+        byte[] secret = null;
+        try {
+            master = console.readPassword("Contraseña maestra: ");
+            if (master == null) return inputCancelled();
+            try (VaultSession session = storage.open(command.vaultPath(), master)) {
+                if (session.version() != 2) { console.printError("Ejecute upgrade antes de consultar TOTP."); return CliExitStatus.ERROR; }
+                secret = session.vault().totpSecret(command.entryId()).orElse(null);
+                if (secret == null) { console.printError("La entrada no tiene secreto TOTP."); return CliExitStatus.ERROR; }
+                TotpGenerator.Result result = new TotpGenerator(clock).generateCurrent(secret);
+                int remaining = result.secondsRemaining();
+                code = result.code();
+                console.printSecret(code);
+                console.printOutput("Tiempo restante: " + remaining + " segundos.");
+            }
+            return CliExitStatus.SUCCESS;
+        } finally { clear(master, code); clear(secret); }
+    }
+
+    private CliExitStatus upgrade(CliCommand command) throws IOException, DecryptionException, InterruptedException {
+        char[] master = null;
+        try {
+            master = console.readPassword("Contraseña maestra: ");
+            if (master == null) return inputCancelled();
+            try (VaultSession session = storage.open(command.vaultPath(), master)) {
+                if (session.version() != 1) { console.printError("La bóveda ya está en formato v2."); return CliExitStatus.ERROR; }
+                if (!"sí".equals(console.readLine("¿Convertir la bóveda a v2? Escriba sí para confirmar: "))) return CliExitStatus.CANCELLED;
+                session.upgradeToV2();
+            }
+            console.printOutput("Bóveda actualizada a formato v2.");
+            return CliExitStatus.SUCCESS;
+        } finally { clear(master); }
     }
 
     private CliExitStatus generate(CliCommand command) throws IOException {
@@ -216,5 +312,9 @@ public final class VaultCliCommands implements CliCommandHandler {
         for (char[] array : arrays) {
             if (array != null) Arrays.fill(array, '\0');
         }
+    }
+
+    private static void clear(byte[] bytes) {
+        if (bytes != null) Arrays.fill(bytes, (byte) 0);
     }
 }

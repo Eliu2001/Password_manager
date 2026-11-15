@@ -47,8 +47,8 @@ public final class VaultStorage {
             salt = crypto.generateSalt();
             Argon2Parameters params = Argon2Parameters.defaults();
             key = keyDeriver.derive(masterPassword, salt, params);
-            prefix = VaultHeader.createAadPrefix(params, salt);
-            payload = codec.encode(vault);
+            prefix = VaultHeader.createAadPrefix(params, salt, 2);
+            payload = codec.encode(vault, 2);
             EncryptedData encrypted = crypto.encrypt(key, payload, prefix);
             ciphertext = encrypted.ciphertextAndTag(); nonce = encrypted.nonce();
             header = VaultHeader.assemble(prefix, nonce, ciphertext.length);
@@ -58,7 +58,7 @@ public final class VaultStorage {
             PrivateFilePermissions.ensurePrivateFile(paths.vault());
             try (FileChannel channel = FileChannel.open(paths.vault(), StandardOpenOption.WRITE,
                     LinkOption.NOFOLLOW_LINKS)) { writeFully(channel, file); channel.force(true); }
-            return new VaultSession(paths, lock, key, vault, crypto, hash(file), beforeAtomicMove);
+            return new VaultSession(paths, lock, key, vault, crypto, hash(file), beforeAtomicMove, 2);
         } catch (Throwable e) {
             if (key != null) key.close(); vault.close(); lock.close();
             if (createdFile) try { Files.deleteIfExists(paths.vault()); } catch (IOException ignored) { }
@@ -86,8 +86,8 @@ public final class VaultStorage {
             key = keyDeriver.derive(masterPassword, salt, header.parameters());
             ciphertext = Arrays.copyOfRange(file, VaultHeader.HEADER_LENGTH_BYTES, file.length);
             plain = crypto.decrypt(key, new EncryptedData(nonce, ciphertext), header.aad());
-            vault = parser.parse(plain);
-            VaultSession session = new VaultSession(paths, lock, key, vault, crypto, hash(file), beforeAtomicMove);
+            vault = parser.parse(plain, header.version());
+            VaultSession session = new VaultSession(paths, lock, key, vault, crypto, hash(file), beforeAtomicMove, header.version());
             key = null; vault = null; return session;
         } catch (Throwable e) {
             if (key != null) key.close(); if (vault != null) vault.close(); lock.close();

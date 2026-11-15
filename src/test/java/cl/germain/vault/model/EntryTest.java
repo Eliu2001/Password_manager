@@ -151,6 +151,48 @@ class EntryTest {
         }
     }
 
+    @Test void vaultOwnsTotpCopiesAndClearsThemOnReplaceRemoveDeleteAndClose() throws Exception {
+        byte[] first = new byte[20]; Arrays.fill(first, (byte) 7);
+        byte[] replacement = new byte[32]; Arrays.fill(replacement, (byte) 9);
+        byte[] id;
+        Vault vault = new Vault();
+        char[] password = {'p'};
+        id = vault.add("service", "user", password, "");
+        Arrays.fill(password, '\0');
+        Entry entry = vault.get(id).orElseThrow();
+        vault.setTotpSecret(id, first);
+        byte[] stored = internalTotp(entry);
+        Arrays.fill(first, (byte) 0);
+        byte[] copy = vault.totpSecret(id).orElseThrow();
+        assertEquals(20, copy.length);
+        copy[0] = 0;
+        assertEquals(7, stored[0]);
+        vault.setTotpSecret(id, replacement);
+        assertArrayEquals(new byte[20], stored);
+        Arrays.fill(replacement, (byte) 0);
+        byte[] nextStored = internalTotp(entry);
+        assertTrue(vault.removeTotpSecret(id));
+        assertArrayEquals(new byte[32], nextStored);
+        assertFalse(vault.removeTotpSecret(id));
+        vault.setTotpSecret(id, new byte[20]);
+        byte[] beforeDelete = internalTotp(entry);
+        assertTrue(vault.remove(id));
+        assertArrayEquals(new byte[20], beforeDelete);
+        assertThrows(IllegalStateException.class, entry::totpSecret);
+        char[] finalPassword = {'q'};
+        byte[] finalId = vault.add("service", "other", finalPassword, "");
+        Arrays.fill(finalPassword, '\0');
+        Entry finalEntry = vault.get(finalId).orElseThrow();
+        byte[] closeSecret = new byte[20]; Arrays.fill(closeSecret, (byte) 3);
+        vault.setTotpSecret(finalId, closeSecret);
+        byte[] storedOnClose = internalTotp(finalEntry);
+        Arrays.fill(closeSecret, (byte) 0);
+        vault.close();
+        assertArrayEquals(new byte[20], storedOnClose);
+        Arrays.fill(copy, (byte) 0);
+        Arrays.fill(finalId, (byte) 0);
+    }
+
     @Test
     void restorePreservesIdAndRejectsDuplicateIds() {
         Instant created = Instant.ofEpochMilli(1_800_000_000_123L);
@@ -200,5 +242,11 @@ class EntryTest {
         Field passwordField = Entry.class.getDeclaredField("password");
         passwordField.setAccessible(true);
         return (char[]) passwordField.get(entry);
+    }
+
+    private static byte[] internalTotp(Entry entry) throws Exception {
+        Field field = Entry.class.getDeclaredField("totpSecret");
+        field.setAccessible(true);
+        return (byte[]) field.get(entry);
     }
 }

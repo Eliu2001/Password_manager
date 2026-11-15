@@ -15,7 +15,11 @@ public record CliCommand(Type type, Path vaultPath, byte[] entryId, int generati
         LIST,
         SHOW,
         DELETE,
-        GENERATE
+        GENERATE,
+        SET_TOTP,
+        REMOVE_TOTP,
+        TOTP,
+        UPGRADE
     }
 
     public CliCommand(Type type, Path vaultPath, byte[] entryId) {
@@ -40,7 +44,8 @@ public record CliCommand(Type type, Path vaultPath, byte[] entryId, int generati
             }
         } else {
             Objects.requireNonNull(vaultPath, "vaultPath");
-            boolean needsId = type == Type.SHOW || type == Type.DELETE;
+            boolean needsId = type == Type.SHOW || type == Type.DELETE || type == Type.SET_TOTP
+                    || type == Type.REMOVE_TOTP || type == Type.TOTP;
             if (needsId != (entryId != null) || generationLength != DEFAULT_GENERATION_LENGTH) {
                 throw new IllegalArgumentException("Entry ID does not match command");
             }
