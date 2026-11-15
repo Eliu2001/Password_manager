@@ -192,6 +192,10 @@
   0 errores y 1 omitida por symlink no disponible en Windows. `java -jar
   target/password-vault.jar --help`, manifest, ausencia de JUnit, licencia,
   descriptor de provider y checksum PowerShell comprobados.
+- **Corrección para CI:** `.mvn/wrapper/maven-wrapper.properties` ahora descarga
+  Maven 3.10.0 desde Maven Central; el SHA-256 descargado coincide con el
+  `distributionSha256Sum` configurado. El wrapper volvió a pasar `verify` en
+  Windows. Falta confirmar la descarga en el runner Linux.
 - **Pendiente:** ejecutar el workflow CI Linux real (incluye verificación POSIX
   del checksum) y completar T07, T08, T11 y T16. No se afirma todavía validación
   Linux ni cierre de AC.
