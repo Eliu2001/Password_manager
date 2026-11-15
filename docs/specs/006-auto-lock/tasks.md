@@ -240,4 +240,8 @@ cumplido el requisito por simulación solamente.
   CI/TTY pendientes.
 - **T26:** `./mvnw.cmd verify -q` pasó el 2026-11-15; 120 pruebas, 0 fallos,
   0 errores y 1 omitida por symlink no disponible en Windows. `git diff --check`
-  pasó. No se afirma un run Linux para Spec 006.
+  pasó. En el momento del cierre original no había run Linux para Spec 006.
+- **Verificación acumulada posterior:** el run Linux
+  [43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522)
+  ejecutó `./mvnw verify` sobre la revisión que incluye Spec 006 y terminó en
+  `success`. La limitación de prueba manual en TTY real permanece.

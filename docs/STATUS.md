@@ -83,15 +83,15 @@
 
 ## Pendientes actuales
 
-- **CI Linux para Spec 005:** aún no ejecutado para la implementación TOTP que
-  está en el árbol de trabajo local. El run más reciente de GitHub es el de Spec
-  004 enlazado arriba; el run de TOTP debe registrarse al publicar estos cambios.
-- **Trazabilidad histórica:** están registrados los IDs/URLs de las ejecuciones
-  Linux citadas para Specs 002/003 y 004.
-- **Producto/entrega:** `AGENTS.md` ya define idioma, comando de ejecución y
-  formato. Siguen pendientes una guía `README.md` y decidir si se distribuye un
-  artefacto CLI autocontenido; son tareas de entrega, no bloqueos de las Specs
-  001–005.
+- **Publicación:** falta crear manualmente el GitHub Release `v1.0.0` y adjuntar
+  `password-vault-1.0.0.jar` más `password-vault-1.0.0.jar.sha256`. No hay
+  Releases publicados; instrucciones en `README.md`.
+- **TTY real de Spec 006 (opcional):** no se hizo una prueba manual del ciclo de
+  autobloqueo en una terminal real. Las pruebas automatizadas usan consola
+  sustituible; la spec está cerrada y la suite pasó en CI Linux.
+- **CI acumulado:** el run Linux de Spec 007 también verificó en la revisión
+  acumulada la suite de Specs 005 (TOTP) y 006 (auto-lock); ver run
+  [43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522).
 
 ## Spec 003 — cli-mvp
 
@@ -148,7 +148,9 @@
   comprobó un reemplazo correcto y simuló el fallo de movimiento atómico mediante
   el hook de prueba; no se afirma que un filesystem real haya rechazado el move.
   Las copias internas que `Mac`/proveedor JDK pueda crear no son borrables por la
-   aplicación. No se ejecutó CI Linux como parte de esta tarea.
+   aplicación. Verificación Linux posterior de la revisión acumulada: run
+   [43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522)
+   pasó el workflow, incluida la suite Maven.
 
 ## Spec 006 — auto-lock
 
@@ -167,8 +169,10 @@
 - **Verificación local:** `./mvnw.cmd verify -q` — **BUILD SUCCESS**, 120 pruebas,
   0 fallos, 0 errores y 1 omitida por symlink no disponible en Windows.
 - **Limitaciones:** la prueba de timeout/lectura y ciclo de sesión usa consola
-  sustituible; no se hizo una comprobación manual en TTY real. CI Linux para esta
-  spec sigue pendiente y no se marca como ejecutado.
+  sustituible; no se hizo una comprobación manual en TTY real. Verificación Linux
+  posterior de la revisión acumulada: run
+  [43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522)
+  pasó el workflow y ejecutó la suite Maven.
 
 ## Spec 007 — distribution
 
