@@ -5,5 +5,5 @@ import cl.germain.vault.crypto.DerivedKey;
 
 @FunctionalInterface
 interface VaultKeyDeriver {
-    DerivedKey derive(char[] password, byte[] salt, Argon2Parameters parameters);
+  DerivedKey derive(char[] password, byte[] salt, Argon2Parameters parameters);
 }

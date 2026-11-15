@@ -19,10 +19,14 @@ entradas. Después: generador de contraseñas, autobloqueo, 2FA (TOTP).
 - El archivo de la bóveda lleva un número de versión de formato desde el inicio.
 
 ## Comandos
-- Compilar y probar: `mvn verify`
-- Solo tests: `mvn test`
-- Ejecutar: `<por definir: clase principal cl.germain.vault.cli.Main>`
-- Lint/formato: `<por definir: Spotless o Checkstyle>`
+- Compilar, probar y verificar formato: `./mvnw.cmd verify` (Windows) o
+  `./mvnw verify` (POSIX).
+- Solo tests: `./mvnw.cmd test` (Windows) o `./mvnw test` (POSIX).
+- Ejecutar la CLI: `./mvnw.cmd -q compile exec:java '-Dexec.args=--help'`
+  (Windows) o `./mvnw -q compile exec:java -Dexec.args="--help"` (POSIX).
+- Aplicar formato Java: `./mvnw.cmd spotless:apply` (Windows) o
+  `./mvnw spotless:apply` (POSIX). `verify` comprueba el formato con Spotless y
+  Google Java Format.
 
 ## Estilo y convenciones
 - Java 21, Maven, paquetes por funcionalidad bajo `cl.germain.vault`:

@@ -88,10 +88,10 @@
   004 enlazado arriba; el run de TOTP debe registrarse al publicar estos cambios.
 - **Trazabilidad histórica:** están registrados los IDs/URLs de las ejecuciones
   Linux citadas para Specs 002/003 y 004.
-- **Producto/entrega:** `AGENTS.md` conserva decisiones de convenciones sin
-  cerrar (comando de ejecución y lint/formato); no hay guía
-  de uso `README.md` ni artefacto CLI autocontenido. Resolverlo es una tarea de
-  entrega, no un bloqueo de las Specs 001–005.
+- **Producto/entrega:** `AGENTS.md` ya define idioma, comando de ejecución y
+  formato. Siguen pendientes una guía `README.md` y decidir si se distribuye un
+  artefacto CLI autocontenido; son tareas de entrega, no bloqueos de las Specs
+  001–005.
 
 ## Spec 003 — cli-mvp
 

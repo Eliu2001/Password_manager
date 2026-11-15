@@ -5,5 +5,5 @@ import java.nio.file.Path;
 
 @FunctionalInterface
 interface BeforeAtomicMove {
-    void run(Path temporaryFile) throws IOException;
+  void run(Path temporaryFile) throws IOException;
 }
