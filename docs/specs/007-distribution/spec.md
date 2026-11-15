@@ -154,8 +154,8 @@ comandos de desarrollo y podrá enlazar el README. `docs/STATUS.md` registrará 
 versión, artefacto, build y plataformas realmente verificadas. No se cambia
 `docs/FORMAT.md` ni `docs/THREAT_MODEL.md`.
 
-La Spec 007 y su implementación fueron aprobadas el 2026-11-15. La implementación
-está en curso; el usuario aprobó `org.apache.maven.plugins:maven-shade-plugin`
-versión `3.6.2`. El cierre exigirá evidencia para AC-1–AC-7, JAR ejecutable
-validado localmente y en CI Linux, README actualizado y `./mvnw.cmd verify` en
-verde.
+La Spec 007 y su implementación fueron aprobadas el 2026-11-15; el usuario aprobó
+`org.apache.maven.plugins:maven-shade-plugin` versión `3.6.2`. Se cerró el
+2026-11-15 con AC-1–AC-7 cubiertos, `./mvnw.cmd verify` en verde y el JAR
+ejecutable validado en Windows y CI Linux (run 43773642522). `README.md` contiene
+las instrucciones de uso, checksum y publicación manual.

@@ -172,15 +172,16 @@
 
 ## Spec 007 — distribution
 
-- **Estado:** implementación en curso; autorizada el 2026-11-15. El usuario
-  aprobó `org.apache.maven.plugins:maven-shade-plugin:3.6.2`.
+- **Estado:** cerrada el 2026-11-15; AC-1–AC-7 cubiertos. Implementación
+  autorizada y plugin `org.apache.maven.plugins:maven-shade-plugin:3.6.2`
+  aprobado por el usuario.
 - **Decisiones aprobadas:** JAR autocontenido para Java 21; primera versión
   `1.0.0`; adjunto manual a GitHub Release `v1.0.0`; README en español; incluir
   checksum SHA-256 verificable. `jpackage`, runtime incluido y publicación
   automática por tag quedan fuera de esta etapa.
 - **Plan/tareas:** `docs/specs/007-distribution/plan.md` y
   `docs/specs/007-distribution/tasks.md`.
-- **Alcance previsto:** `maven-shade-plugin` con versión fija, artefacto local
+- **Alcance implementado:** `maven-shade-plugin` con versión fija, artefacto local
   `target/password-vault.jar`, manifest de `cl.germain.vault.cli.Main`, Java 21
   como requisito y verificación del JAR en CI Linux. Sin cambios a formato de
   bóveda ni al modelo de amenazas.
@@ -196,12 +197,11 @@
   Maven 3.10.0 desde Maven Central; el SHA-256 descargado coincide con el
   `distributionSha256Sum` configurado. El wrapper volvió a pasar `verify` en
   Windows. Falta confirmar la descarga en el runner Linux.
-- **Pendiente:** ejecutar el workflow CI Linux real (incluye verificación POSIX
-  del checksum) y completar T07, T08, T11 y T16. No se afirma todavía validación
-  Linux ni cierre de AC.
-- **Incidente CI:** el paso de inspección del JAR falló porque `grep -q` cerró
-  antes las tuberías de `printf` bajo `pipefail` (Broken pipe). Se reemplazaron
-  esas tuberías por here-strings, pero el run siguiente aún terminó con código 1
-  en la comparación exacta de `Main-Class`. El manifest usa CRLF; ahora se
-  eliminan los `\r` antes de comparar. También se añadieron mensajes por
-  aserción; falta un nuevo run para confirmar.
+- **CI Linux:** [run 43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522),
+  commit `f8b25dd`, terminó en **success**. Pasaron Maven verify y las
+  comprobaciones del JAR ejecutable, manifest, dependencias/licencia, ayuda y
+  checksum POSIX.
+- **Cierre:** Windows `./mvnw.cmd verify` — BUILD SUCCESS, 120 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible. CI Linux y SHA-256 POSIX
+  verificados; README actualizado; AC-1–AC-7 cubiertos. No se publicó un Release
+  real, según el alcance manual de la spec.

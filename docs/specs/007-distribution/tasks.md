@@ -80,22 +80,19 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
 
 ## CI y checksums
 
-- [ ] **T07 — Añadir prueba del JAR empaquetado a CI Linux** (25 min)\
+- [x] **T07 — Añadir prueba del JAR empaquetado a CI Linux** (25 min)\
   **RF:** R2 · **AC:** AC-3\
   **Hecho cuando:** workflow con Java 21 ejecuta `verify` y, sobre el artefacto
   producido, invoca `java -jar ... --help`, comprueba éxito y presencia de ayuda.\
   **Evidencia:** workflow revisado y run Linux verde; no se marca completo antes
   de disponer del run real.
 
-  **Implementado; evidencia CI Linux pendiente.** El workflow comprueba manifest,
-  clases/runtime, licencia, provider service, ausencia de JUnit y el arranque de
-  ayuda. Tras el primer run se sustituyeron pipes `printf | grep -q` por
-  here-strings para evitar `Broken pipe` con `pipefail`. El run siguiente todavía
-  falló al comparar el manifest: las líneas usan CRLF, así que se normalizan
-  antes de `grep`. Se añadieron diagnósticos por condición; falta un nuevo run
-  Linux.
+  **Evidencia:** run Linux 43773642522, commit `f8b25dd`, terminó en `success`.
+  `Verify project` y `Verify packaged CLI` pasaron; el segundo comprobó manifest,
+  clases/runtime, licencia, provider service, ausencia de JUnit y `java -jar
+  ... --help`. El manifest se normaliza de CRLF antes de comparar.
 
-- [ ] **T08 — Validar generación y verificación SHA-256** (25 min)\
+- [x] **T08 — Validar generación y verificación SHA-256** (25 min)\
   **RF:** R3 · **AC:** AC-4, AC-7\
   **Hecho cuando:** comandos Windows y POSIX calculan y verifican el checksum del
   JAR; el nombre publicado queda definido como
@@ -103,8 +100,8 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   **Evidencia:** hash recalculado sobre el mismo artefacto y verificación positiva
   en la plataforma ejecutada; registrar cualquier otra plataforma como pendiente.
 
-  **Parcial:** PowerShell creó y verificó un checksum sobre el JAR local. CI ahora
-  repetirá generación/verificación con `sha256sum`; falta el run Linux.
+  **Evidencia:** cálculo/verificación PowerShell sobre el artefacto Windows y
+  `sha256sum` en el run Linux 43773642522; ambas comprobaciones pasaron.
 
 ## Guía de usuario
 
@@ -125,7 +122,7 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   **Evidencia:** comparación con parser/ayuda y revisión de que no se inventan
   comportamientos.
 
-- [ ] **T11 — Documentar dependencias, licencias y checksum** (25 min)\
+- [x] **T11 — Documentar dependencias, licencias y checksum** (25 min)\
   **RF:** R1, R3 · **AC:** AC-2, AC-4, AC-7\
   **Hecho cuando:** README identifica dependencias de terceros/licencias e
   incluye instrucciones funcionales para verificar SHA-256 en Windows y POSIX,
@@ -133,8 +130,9 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   **Evidencia:** comandos probados sobre el artefacto y referencia a avisos
   incluidos.
 
-  **Parcial:** README identifica Bouncy Castle y su licencia incluida; comandos
-  PowerShell probados. El comando POSIX se prueba en CI y queda pendiente el run.
+  **Evidencia:** README identifica Bouncy Castle 1.86/licencia incluida y contiene
+  verificación SHA-256 para Windows/POSIX. PowerShell y run Linux
+  43773642522 validaron sus comandos.
 
 - [x] **T12 — Documentar publicación manual del Release v1.0.0** (20 min)\
   **RF:** R3 · **AC:** AC-7\
@@ -184,7 +182,7 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   dependencia runtime, cambio de formato, Threat Model, comando CLI ni publicación
   automática. `docs/STATUS.md` distingue resultados locales de CI pendiente.
 
-- [ ] **T16 — Ejecutar verificación integral y registrar cierre** (25 min)\
+- [x] **T16 — Ejecutar verificación integral y registrar cierre** (25 min)\
   **RF:** R1–R4 · **AC:** AC-1–AC-7\
   **Hecho cuando:** `./mvnw.cmd verify` y CI Linux pasan, el JAR se ejecuta en
   ambas plataformas, README está completo y todos los AC tienen evidencia; se
@@ -192,11 +190,18 @@ sensibles. Implementación autorizada por el usuario el 2026-11-15; plugin
   **Evidencia:** BUILD SUCCESS, conteo de pruebas y enlace/ID del run Linux. No
   cerrar la spec si falta alguna plataforma o AC exigido.
 
+  **Resultado:** `./mvnw.cmd verify` pasó en Windows (120 pruebas, 0 fallos,
+  0 errores, 1 omitida por symlink no disponible). CI Linux terminó en `success`
+  en [run 43773642522](https://github.com/Eliu2001/Password_manager/actions/runs/43773642522).
+  Artefacto, ayuda, checksum, documentación y AC-1–AC-7 revisados; Spec 007
+  cerrada el 2026-11-15.
+
 ## Fuera de alcance
 
 No implementar `jpackage`, instalador nativo, runtime incluido, firma,
 actualizaciones, repositorio Maven, GUI o publicación automática. No probar
 comandos operativos mediante pipes ni automatizar contraseñas. Crear un Release
 real no es parte del build; las instrucciones y archivos adjuntos sí deben quedar
-preparados/documentados. La implementación está autorizada; no marcar el cierre
-hasta obtener la evidencia Linux real y completar las tareas pendientes.
+preparados/documentados. La implementación quedó cerrada al completar las tareas
+y obtener evidencia Windows/Linux; no crear ni publicar el Release real como
+parte de esta spec.
