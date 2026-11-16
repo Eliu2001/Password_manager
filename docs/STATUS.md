@@ -27,14 +27,17 @@
 - **Distribución vigente:** `v1.2.0` está publicado e incluye la interfaz guiada;
   `v1.1.0` permanece como versión histórica con la CLI anterior.
 
-## Spec 012 — Navegación recuperable y contraseña etiquetada (planificada)
+## Spec 012 — Navegación recuperable y contraseña etiquetada (cerrada)
 
-- **Estado:** spec aprobada el 2026-11-16; plan y tareas preparados. La
-  implementación aún no está autorizada.
+- **Estado:** T01–T05 completadas el 2026-11-16; AC-1–AC-7 cubiertos.
 - **Documentos:** `docs/specs/012-guided-navigation-and-secret-display/`.
 - **Alcance:** reintentar opciones inválidas, ofrecer volver/cancelar en pantallas
   secundarias y etiquetar la contraseña revelada, conservando el canal privado y
   el manejo `char[]`.
+- **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 145 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible en Windows. Spotless y
+  `git diff --check` pasaron. No se realizó una prueba manual TTY específica de
+  este cambio.
 
 ## Spec cerrada
 

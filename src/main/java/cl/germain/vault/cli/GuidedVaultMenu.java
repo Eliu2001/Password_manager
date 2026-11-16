@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 /** Numbered menu and ephemeral entry selectors for an authenticated vault. */
 final class GuidedVaultMenu {
@@ -58,7 +59,7 @@ final class GuidedVaultMenu {
       case "2" -> list(session.vault().list());
       case "3" -> search(session);
       case "4", "5", "6", "7", "8", "9" -> {
-        Entry entry = select(session, session.vault().list());
+        Entry entry = select(session, session.vault()::list);
         if (entry != null) {
           if ("5".equals(choice)) {
             commands.updatePasswordInSession(entry.id(), session);
@@ -87,50 +88,71 @@ final class GuidedVaultMenu {
 
   private void search(VaultSession session)
       throws IOException, InterruptedException, DecryptionException {
-    String query = console.readLine("Buscar servicio: ");
-    if (query == null) return;
+    String query = console.readLine("Buscar servicio (0 para volver): ");
+    if (query == null || "0".equals(query)) return;
     String normalized = query.toLowerCase(Locale.ROOT);
-    List<Entry> matches =
-        session.vault().list().stream()
-            .filter(entry -> entry.service().toLowerCase(Locale.ROOT).contains(normalized))
-            .toList();
+    List<Entry> matches = matchingEntries(session, normalized);
     if (matches.isEmpty()) {
       console.printOutput("No se encontraron entradas.");
       return;
     }
-    Entry selected = select(session, matches);
+    Entry selected = select(session, () -> matchingEntries(session, normalized));
     if (selected == null) return;
-    String action =
-        console.readLine("1. Ver  2. Actualizar contraseña  3. Borrar  4. TOTP  5. Cancelar: ");
-    CliCommand.Type type =
-        switch (action == null ? "5" : action) {
-          case "1" -> CliCommand.Type.SHOW;
-          case "3" -> CliCommand.Type.DELETE;
-          case "4" -> CliCommand.Type.TOTP;
-          default -> null;
-        };
-    if ("2".equals(action)) {
-      commands.updatePasswordInSession(selected.id(), session);
-    } else if (type != null) {
-      run(new CliCommand(type, vaultPath, selected.id()), session);
+    while (true) {
+      String action =
+          console.readLine(
+              "1. Ver  2. Actualizar contraseña  3. Borrar  4. TOTP  5. Volver al menú: ");
+      if (action == null || "5".equals(action)) return;
+      switch (action) {
+        case "1" -> {
+          run(new CliCommand(CliCommand.Type.SHOW, vaultPath, selected.id()), session);
+          return;
+        }
+        case "2" -> {
+          commands.updatePasswordInSession(selected.id(), session);
+          return;
+        }
+        case "3" -> {
+          run(new CliCommand(CliCommand.Type.DELETE, vaultPath, selected.id()), session);
+          return;
+        }
+        case "4" -> {
+          run(new CliCommand(CliCommand.Type.TOTP, vaultPath, selected.id()), session);
+          return;
+        }
+        default -> console.printError("Opción inválida.");
+      }
     }
   }
 
-  private Entry select(VaultSession session, List<Entry> entries)
+  private Entry select(VaultSession session, Supplier<List<Entry>> entriesSupplier)
       throws IOException, InterruptedException {
-    list(entries);
-    if (entries.isEmpty()) return null;
-    String value = console.readLine("Número de entrada (0 para cancelar): ");
-    if (value == null || "0".equals(value)) return null;
-    try {
-      int index = Integer.parseInt(value);
-      if (index < 1 || index > entries.size()) throw new NumberFormatException();
-      Entry selected = entries.get(index - 1);
-      return session.vault().get(selected.id()).orElse(null);
-    } catch (NumberFormatException exception) {
-      console.printError("Número de entrada inválido.");
-      return null;
+    while (true) {
+      List<Entry> entries = entriesSupplier.get();
+      list(entries);
+      if (entries.isEmpty()) return null;
+      String value = console.readLine("Número de entrada (0 para volver): ");
+      if (value == null || "0".equals(value)) return null;
+      try {
+        int index = Integer.parseInt(value);
+        if (index < 1 || index > entries.size()) throw new NumberFormatException();
+        Entry selected = entries.get(index - 1);
+        Entry current = session.vault().get(selected.id()).orElse(null);
+        if (current == null) {
+          console.printError("La entrada ya no está disponible. Seleccione nuevamente.");
+          continue;
+        }
+        return current;
+      } catch (NumberFormatException exception) {
+        console.printError("Número de entrada inválido.");
+      }
     }
+  }
+
+  private static List<Entry> matchingEntries(VaultSession session, String normalizedQuery) {
+    return session.vault().list().stream()
+        .filter(entry -> entry.service().toLowerCase(Locale.ROOT).contains(normalizedQuery))
+        .toList();
   }
 
   private void list(List<Entry> entries) throws IOException {

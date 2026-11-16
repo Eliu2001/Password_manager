@@ -51,23 +51,31 @@ public final class GuidedVaultApplication {
           console.printOutput("La bóveda configurada no está disponible; seleccione una ruta.");
         }
         selected = null;
+        boolean chooseAction = true;
         while (selected == null) {
-          console.printOutput(
-              theme.wizard()
-                  + System.lineSeparator()
-                  + "Seleccione una acción:\n"
-                  + theme.colorizeWizardOptions(
-                      "[1] Crear una bóveda nueva\n[2] Abrir una bóveda existente\n[0] Salir"));
-          String choice = console.readLine("Seleccione una opción: ");
-          if (choice == null || "0".equals(choice) || "3".equals(choice))
-            return CliExitStatus.CANCELLED.code();
-          if (!"1".equals(choice) && !"2".equals(choice)) {
-            console.printError("Opción inválida.");
+          if (chooseAction) {
+            console.printOutput(
+                theme.wizard()
+                    + System.lineSeparator()
+                    + "Seleccione una acción:\n"
+                    + theme.colorizeWizardOptions(
+                        "[1] Crear una bóveda nueva\n[2] Abrir una bóveda existente\n[0] Salir"));
+            String choice = console.readLine("Seleccione una opción: ");
+            if (choice == null || "0".equals(choice)) return CliExitStatus.CANCELLED.code();
+            if (!"1".equals(choice) && !"2".equals(choice)) {
+              console.printError("Opción inválida.");
+              continue;
+            }
+            create = "1".equals(choice);
+            chooseAction = false;
+          }
+
+          String value = console.readLine("Ruta completa de la bóveda (0 para volver): ");
+          if (value == null) return CliExitStatus.CANCELLED.code();
+          if ("0".equals(value)) {
+            chooseAction = true;
             continue;
           }
-          create = "1".equals(choice);
-          String value = console.readLine("Ruta completa de la bóveda: ");
-          if (value == null) return CliExitStatus.CANCELLED.code();
           try {
             selected = Path.of(value);
           } catch (RuntimeException exception) {

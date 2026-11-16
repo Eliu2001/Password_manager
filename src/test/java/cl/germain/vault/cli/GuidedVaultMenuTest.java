@@ -1,6 +1,7 @@
 package cl.germain.vault.cli;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,6 +68,7 @@ class GuidedVaultMenuTest {
       session.vault().add("Second Service", "second-user", secondPassword, "second note");
       session.save();
       RecordingConsole console = new RecordingConsole();
+      console.lines.add("99");
       console.lines.add("2");
       console.lines.add("si");
       GuidedVaultMenu menu =
@@ -76,7 +78,17 @@ class GuidedVaultMenuTest {
       menu.step(session, "4");
 
       assertTrue(console.privateOutput.stream().anyMatch(line -> line.contains("Second Service")));
+      assertTrue(
+          console.errors.stream().anyMatch(line -> line.contains("Número de entrada inválido")));
       assertArrayEquals(secondPassword, console.revealedSecrets.getFirst());
+      assertEquals(
+          "private:Contraseña:", console.outputEvents.get(console.outputEvents.size() - 2));
+      assertEquals("secret", console.outputEvents.getLast());
+      assertEquals("Contraseña:", console.privateOutput.getLast());
+      assertTrue(console.prompts.stream().anyMatch(prompt -> prompt.contains("0 para volver")));
+      assertFalse(
+          console.outputEvents.stream()
+              .anyMatch(event -> event.contains("synthetic second entry password")));
       assertFalse(
           console.privateOutput.stream()
               .anyMatch(line -> line.contains("synthetic first entry password")));
@@ -104,6 +116,7 @@ class GuidedVaultMenuTest {
       byte[] before = Files.readAllBytes(vaultPath);
       RecordingConsole console = new RecordingConsole();
       console.lines.add("99");
+      console.lines.add("0");
       GuidedVaultMenu menu =
           new GuidedVaultMenu(
               console, new VaultCliCommands(console, storage), vaultPath, new ConsoleTheme(false));
@@ -116,12 +129,22 @@ class GuidedVaultMenuTest {
 
       console.lines.add("GITHUB");
       console.lines.add("2");
+      console.lines.add("bad action");
       console.lines.add("5");
       menu.step(session, "3");
 
       assertTrue(console.privateOutput.stream().anyMatch(line -> line.contains("GitHub Personal")));
       assertTrue(console.privateOutput.stream().anyMatch(line -> line.contains("GitHub Work")));
+      assertTrue(console.errors.stream().anyMatch(line -> line.contains("Opción inválida")));
       assertFalse(console.privateOutput.stream().anyMatch(line -> line.contains("private note")));
+      assertArrayEquals(before, Files.readAllBytes(vaultPath));
+
+      console.lines.addAll(List.of("GITHUB", "1", "bad action", "1", "no"));
+      menu.step(session, "3");
+
+      assertEquals(
+          4, console.prompts.stream().filter(prompt -> prompt.startsWith("1. Ver  ")).count());
+      assertTrue(console.revealedSecrets.isEmpty());
       assertArrayEquals(before, Files.readAllBytes(vaultPath));
       Arrays.fill(before, (byte) 0);
     } finally {
@@ -130,10 +153,39 @@ class GuidedVaultMenuTest {
     }
   }
 
+  @Test
+  void declinedRevealDoesNotPrintPasswordLabelOrSecret() throws Exception {
+    VaultStorage storage = new VaultStorage();
+    Path vaultPath = directory.resolve("declined-reveal.pvlt");
+    char[] master = "synthetic master password".toCharArray();
+    char[] password = "synthetic hidden password".toCharArray();
+    try (VaultSession session = storage.create(vaultPath, master)) {
+      session.vault().add("Synthetic Service", "synthetic-user", password, "synthetic note");
+      session.save();
+      RecordingConsole console = new RecordingConsole();
+      console.lines.add("1");
+      console.lines.add("no");
+      GuidedVaultMenu menu =
+          new GuidedVaultMenu(
+              console, new VaultCliCommands(console, storage), vaultPath, new ConsoleTheme(false));
+
+      menu.step(session, "4");
+
+      assertTrue(console.revealedSecrets.isEmpty());
+      assertFalse(console.privateOutput.contains("Contraseña:"));
+      assertFalse(console.outputEvents.contains("secret"));
+    } finally {
+      Arrays.fill(master, '\0');
+      Arrays.fill(password, '\0');
+    }
+  }
+
   private static final class RecordingConsole implements CliConsole {
     private final List<String> privateOutput = new ArrayList<>();
     private final List<String> errors = new ArrayList<>();
     private final List<char[]> revealedSecrets = new ArrayList<>();
+    private final List<String> outputEvents = new ArrayList<>();
+    private final List<String> prompts = new ArrayList<>();
     private final Queue<String> lines = new ArrayDeque<>();
 
     @Override
@@ -143,6 +195,7 @@ class GuidedVaultMenuTest {
 
     @Override
     public String readLine(String prompt) {
+      prompts.add(prompt);
       if (lines.isEmpty()) throw new AssertionError("Unexpected visible prompt: " + prompt);
       return lines.remove();
     }
@@ -171,11 +224,13 @@ class GuidedVaultMenuTest {
     @Override
     public void printPrivate(String message) throws IOException {
       privateOutput.add(message);
+      outputEvents.add("private:" + message);
     }
 
     @Override
     public void printSecret(char[] secret) {
       revealedSecrets.add(secret.clone());
+      outputEvents.add("secret");
     }
   }
 }

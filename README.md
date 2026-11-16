@@ -92,9 +92,12 @@ recuerda solo la ruta en `%LOCALAPPDATA%\PasswordVault\vault-path.txt`.
 Dentro de la sesión del lanzador:
 
 1. Elige **Ver entrada** o **Buscar servicio** y selecciona el número mostrado.
-   Los números son temporales y solo valen para esa lista.
+   Los números son temporales y solo valen para esa lista. Si escribes una opción
+   o índice inválido, puedes intentarlo de nuevo; escribe `0` para volver/cancelar
+   una selección. En el asistente, `0` en la ruta vuelve a Crear/Abrir/Salir.
 2. Cuando pregunte **«¿Revelar la contraseña?»**, escribe `sí` o `si` para
-   mostrarla en la consola. Cualquier otra respuesta no la revela.
+   mostrarla en la consola. Se presenta bajo el rótulo **Contraseña:**. Cualquier
+   otra respuesta no la revela.
 
 Para rotar una contraseña, elige **Actualizar contraseña**, selecciona la entrada
 e introduce la contraseña nueva dos veces. Solo se guarda si ambas entradas

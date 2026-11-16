@@ -28,7 +28,7 @@ class GuidedVaultApplicationTest {
     Path vaultPath = directory.resolve("created vault.pvlt");
     VaultStorage storage = new VaultStorage();
     TestConsole console = new TestConsole();
-    console.lines.addAll(List.of("1", vaultPath.toString()));
+    console.lines.addAll(List.of("bad", "1", directory.toString(), vaultPath.toString()));
     console.passwords.add("synthetic-master".toCharArray());
     console.passwords.add("synthetic-master".toCharArray());
     console.timedLines.add(TimedLineResult.line("0"));
@@ -44,6 +44,8 @@ class GuidedVaultApplicationTest {
         vaultPath.toString() + System.lineSeparator(),
         Files.readString(configPath, StandardCharsets.UTF_8));
     assertEquals(2, console.passwordPrompts);
+    assertTrue(console.errors.stream().anyMatch(line -> line.contains("Opción inválida")));
+    assertTrue(console.errors.stream().anyMatch(line -> line.contains("requisitos")));
     assertTrue(console.passwordInputs.stream().allMatch(GuidedVaultApplicationTest::isCleared));
     assertTrue(console.output.stream().anyMatch(line -> line.contains("PASSWORD VAULT")));
   }
@@ -82,7 +84,7 @@ class GuidedVaultApplicationTest {
     Path missingVault = directory.resolve("missing.pvlt");
     VaultStorage storage = new VaultStorage();
     TestConsole console = new TestConsole();
-    console.lines.addAll(List.of("2", missingVault.toString(), "0"));
+    console.lines.addAll(List.of("2", missingVault.toString(), "0", "0"));
     GuidedVaultApplication application =
         new GuidedVaultApplication(
             console, storage, runner(console, storage), new VaultPathConfig(directory));
@@ -93,6 +95,34 @@ class GuidedVaultApplicationTest {
     assertFalse(Files.exists(missingVault));
     assertFalse(Files.exists(directory.resolve("PasswordVault/vault-path.txt")));
     assertTrue(console.errors.stream().anyMatch(line -> line.contains("requisitos")));
+  }
+
+  @Test
+  void routePromptCanReturnToWizardAndChooseDifferentAction() throws Exception {
+    Path existingVault = directory.resolve("open-after-return.pvlt");
+    VaultStorage storage = new VaultStorage();
+    char[] master = "synthetic-master".toCharArray();
+    try (VaultSession ignored = storage.create(existingVault, master)) {
+      // Fixture for switching from Create to Open.
+    } finally {
+      Arrays.fill(master, '\0');
+    }
+
+    TestConsole console = new TestConsole();
+    console.lines.addAll(List.of("1", directory.toString(), "0", "2", existingVault.toString()));
+    console.passwords.add("synthetic-master".toCharArray());
+    console.timedLines.add(TimedLineResult.line("0"));
+    GuidedVaultApplication application =
+        new GuidedVaultApplication(
+            console, storage, runner(console, storage), new VaultPathConfig(directory));
+
+    assertEquals(0, application.run());
+
+    assertTrue(console.errors.stream().anyMatch(line -> line.contains("requisitos")));
+    assertEquals(1, console.passwordPrompts);
+    assertFalse(Files.exists(directory.resolve("vault-path.txt")));
+    assertTrue(Files.exists(directory.resolve("PasswordVault/vault-path.txt")));
+    assertTrue(console.passwordInputs.stream().allMatch(GuidedVaultApplicationTest::isCleared));
   }
 
   private static CliSessionRunner runner(TestConsole console, VaultStorage storage) {

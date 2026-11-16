@@ -362,17 +362,12 @@ public final class VaultCliCommands implements CliCommandHandler {
       String answer = console.readLine("¿Revelar la contraseña? Escriba sí o si para confirmar: ");
       boolean reveal = Confirmation.isAffirmative(answer);
       if (reveal) entryPassword = entry.password();
-      List<String> output =
-          guidedOutput
-              ? List.of(
-                  "Servicio: " + entry.service(),
-                  "Usuario: " + entry.username(),
-                  "Notas: " + entry.notes())
-              : List.of(
-                  "ID: " + CliArgumentParser.formatId(entry.id()),
-                  "Servicio: " + entry.service(),
-                  "Usuario: " + entry.username(),
-                  "Notas: " + entry.notes());
+      List<String> output = new ArrayList<>();
+      if (!guidedOutput) output.add("ID: " + CliArgumentParser.formatId(entry.id()));
+      output.add("Servicio: " + entry.service());
+      output.add("Usuario: " + entry.username());
+      output.add("Notas: " + entry.notes());
+      if (guidedOutput && reveal) output.add("Contraseña:");
       char[] secret = entryPassword;
       entryPassword = null;
       return CommandResult.output(
