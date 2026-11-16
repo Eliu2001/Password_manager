@@ -59,26 +59,36 @@ También puedes iniciar el asistente directamente desde el JAR:
 java -jar .\password-vault-1.2.1.jar start
 ```
 
-En Linux/macOS:
+En Linux:
 
 ```sh
 java -jar ./password-vault-1.2.1.jar start
 ```
 
 Usa una terminal interactiva real; no pipes ni redirecciones. El flujo guiado
-recuerda solo la ruta en `%LOCALAPPDATA%\PasswordVault\vault-path.txt`.
+recuerda solo la ruta de la bóveda: en Windows, bajo
+`%LOCALAPPDATA%\PasswordVault\vault-path.txt`; en Linux, bajo
+`$XDG_CONFIG_HOME/password-vault/vault-path.txt` si `XDG_CONFIG_HOME` es una ruta
+absoluta, o `$HOME/.config/password-vault/vault-path.txt` en otro caso. En Linux,
+el directorio y el archivo de configuración usan permisos privados para el usuario
+(0700 y 0600). El asistente `start` no está documentado como compatible con macOS.
+La compatibilidad Linux de `start` se incluye en esta revisión del código fuente;
+el JAR `v1.2.1` ya publicado todavía no contiene esta corrección. Para probarla
+antes de una nueva publicación, compila el proyecto con `./mvnw verify` y ejecuta
+`java -jar target/password-vault.jar start`.
 
 #### Primera configuración
 
-1. Ejecuta `vault.cmd` o inicia el JAR con el comando `start` anterior.
+1. En Windows, ejecuta `vault.cmd` o inicia el JAR con el comando `start` anterior;
+   en Linux, inicia el JAR con ese comando desde una terminal.
 2. Elige **Crear bóveda nueva** o **Abrir bóveda existente** y escribe la ruta
    completa del archivo `.pvlt` (no solo una carpeta). Para crearla, el directorio
    padre ya debe existir y el destino no debe existir.
 3. Introduce la contraseña maestra cuando se solicite. Al crear, confírmala; no
    se muestra en pantalla ni se guarda en la configuración.
-4. El asistente recuerda únicamente la ruta en
-   `%LOCALAPPDATA%\PasswordVault\vault-path.txt`. Para cambiar de bóveda, mueve o
-   elimina ese archivo de configuración y vuelve a iniciar el asistente.
+4. El asistente recuerda únicamente la ruta, en la ubicación de configuración
+   correspondiente a tu sistema descrita arriba. Para cambiar de bóveda, elimina
+   `vault-path.txt` y vuelve a iniciar el asistente.
 5. El menú muestra la bóveda seleccionada y su estado desbloqueado, y organiza las
    opciones en **Entradas**, **Autenticación TOTP** y **Herramientas**. En terminales
    estrechas usa una distribución vertical. Los colores discretos se desactivan

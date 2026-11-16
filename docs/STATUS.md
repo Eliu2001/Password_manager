@@ -1,5 +1,20 @@
 # Estado del proyecto — 2026-11-16
 
+## Spec 014 — Configuración del asistente guiado en Linux (en curso)
+
+- **Spec:** `docs/specs/014-linux-guided-config/spec.md`, aprobada por el usuario
+  el 2026-11-16.
+- **Implementado:** resolución Linux desde `XDG_CONFIG_HOME` absoluto o el fallback
+  `$HOME/.config`; permisos 0700/0600 para el directorio/archivo; Windows conserva
+  `%LOCALAPPDATA%`. README advierte que el JAR publicado `v1.2.1` aún no incluye
+  esta corrección.
+- **Verificación local Windows:** `./mvnw.cmd verify` — BUILD SUCCESS, 152 pruebas,
+  0 fallos, 0 errores y 4 omitidas (3 requieren capacidades POSIX; 1 prueba de
+  symlink no disponible). Spotless pasó.
+- **Pendiente para cierre:** ejecutar `mvn verify` en Linux para verificar permisos
+  POSIX en filesystem real y probar `start` en una TTY Linux. No se afirma que el
+  JAR `v1.2.1` publicado esté corregido ni se ha publicado una nueva versión.
+
 ## Spec 010 — Asistente y menú guiado de consola (cerrada)
 
 - **Spec aprobada:** `docs/specs/010-guided-console-ux/spec.md`.

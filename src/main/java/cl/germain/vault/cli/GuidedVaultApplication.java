@@ -41,6 +41,9 @@ public final class GuidedVaultApplication {
         console.printError(
             "La configuración local no es válida; seleccione una bóveda explícitamente.");
         configured = Optional.empty();
+      } catch (IllegalStateException exception) {
+        console.printError(exception.getMessage());
+        return CliExitStatus.ERROR.code();
       }
       Path selected;
       boolean create = false;
