@@ -10,7 +10,7 @@ El proyecto usa Java 21, Maven y JUnit 5. Ya existen los paquetes `crypto`, `mod
 
 Todos los comandos operativos requieren `--vault <ruta>` y `System.console()` disponible. La CLI no aceptará secretos en argumentos, variables de entorno ni stdin, ni operará de forma no interactiva. Las opciones y los IDs se validan antes de tocar archivos. IDs: exactamente 32 dígitos hexadecimales minúsculos.
 
-Contraseñas maestras y de entradas se leen sin eco y se mantienen como `char[]`; la CLI borra los arreglos que posee en todos los caminos. No se recortan ni normalizan los campos de entrada. Solo la respuesta exacta `sí` confirma revelación o borrado. `show` puede imprimir la contraseña exclusivamente a la consola interactiva.
+Contraseñas maestras y de entradas se leen sin eco y se mantienen como `char[]`; la CLI borra los arreglos que posee en todos los caminos. No se recortan ni normalizan los campos de entrada. Solo la respuesta exacta `sí` o `si` confirma revelación o borrado; espacios adicionales y otras mayúsculas/minúsculas no confirman. `show` puede imprimir la contraseña exclusivamente a la consola interactiva.
 
 ## 2. Arquitectura propuesta
 
@@ -36,8 +36,8 @@ La CLI depende de `storage` y `model`; `crypto` permanece independiente. Reutili
 - **create:** pedir contraseña maestra dos veces sin eco; comparar sin crear una copia persistente; ante discrepancia/interrupción cancelar sin archivo. En coincidencia llamar a `VaultStorage.create`. No sobrescribir; borrar ambas entradas bajo propiedad de CLI.
 - **add:** abrir sesión tras pedir la contraseña maestra una vez; solicitar servicio, usuario, contraseña y notas en ese orden. Rechazar campos requeridos vacíos sin agregar ni guardar. Entregar contraseña al modelo de acuerdo con su contrato de copia/ownership, borrar el arreglo temporal propio y guardar explícitamente. Mostrar ID solo tras save exitoso.
 - **list:** abrir y listar en orden; mostrar ID, servicio y usuario, nunca contraseña ni notas. Bóveda vacía: mensaje claro. No llamar a `save()`.
-- **show:** validar ID antes de abrir; si existe, mostrar ID/servicio/usuario/notas, pedir confirmación y revelar contraseña solo tras `sí` exacto. Escribirla solamente mediante el canal de consola interactiva; borrar inmediatamente la copia `char[]` devuelta por el modelo, tanto si se revela como si se cancela. No guardar.
-- **delete:** mostrar ID/servicio/usuario, pedir confirmación; solo `sí` elimina y guarda. Cualquier otra respuesta cancela normalmente, sin save. ID desconocido no modifica la bóveda.
+- **show:** validar ID antes de abrir; si existe, mostrar ID/servicio/usuario/notas, pedir confirmación y revelar contraseña solo tras `sí` o `si` exacto. Escribirla solamente mediante el canal de consola interactiva; borrar inmediatamente la copia `char[]` devuelta por el modelo, tanto si se revela como si se cancela. No guardar.
+- **delete:** mostrar ID/servicio/usuario, pedir confirmación; solo `sí` o `si` exactos eliminan y guardan. Cualquier otra respuesta cancela normalmente, sin save. ID desconocido no modifica la bóveda.
 - En todos los comandos existentes, el `char[]` de contraseña maestra es limpiado por CLI después de la llamada a Storage; la sesión se cierra en éxito, cancelación y error. Los errores de autenticación conservan el mensaje genérico, sin distinguir causas.
 
 ## 4. Validación, fallos y secretos

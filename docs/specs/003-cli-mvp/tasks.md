@@ -185,9 +185,9 @@ completa sin verificar su criterio. No usar secretos reales ni fixtures sensible
   **RF:** R3, R6, R8 · **AC:** AC-5, AC-8, AC-10–AC-12\
   **Hecho cuando:** un ID inválido se rechaza antes de abrir; para un ID válido se
   muestran solo los campos acordados; la contraseña se obtiene como copia
-  `char[]`, se revela únicamente tras `sí` exacto por canal privado y se borra
+  `char[]`, se revela únicamente tras `sí` o `si` exacto por canal privado y se borra
   tanto en confirmación como cancelación; nunca se guarda.
-  **Evidencia:** `VaultCliCommands.show` obtiene contraseña solo tras `sí` exacto,
+  **Evidencia:** `VaultCliCommands.show` obtiene contraseña solo tras `sí` o `si` exacto,
   la copia a `char[]`, la emite por `printSecret` y la borra en `finally`; datos
   de entrada solo se imprimen tras cierre limpio y no se llama a `save()`.
 
@@ -202,7 +202,7 @@ completa sin verificar su criterio. No usar secretos reales ni fixtures sensible
 
 - [x] **T20 — Implementar borrado con confirmación (`delete`)** (25 min)\
   **RF:** R3, R7, R8 · **AC:** AC-5, AC-9–AC-12\
-  **Hecho cuando:** se muestra ID/servicio/usuario sin contraseña; solo `sí`
+  **Hecho cuando:** se muestra ID/servicio/usuario sin contraseña; solo `sí` o `si`
   elimina y guarda; las demás respuestas cancelan normalmente sin guardar; ID
   desconocido no modifica la bóveda.
   **Evidencia:** `VaultCliCommands.delete` muestra solo ID/servicio/usuario,

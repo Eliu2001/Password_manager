@@ -10,8 +10,8 @@ terminal interactiva. La versión actual de distribución es la **1.1.0**.
 - Una terminal interactiva real para los comandos que operan sobre la bóveda.
   `--help` puede ejecutarse sin terminal.
 
-El JAR no incluye una JVM, no es un ejecutable nativo y no crea una bóveda
-preconfigurada. Debes indicar explícitamente dónde guardar la bóveda.
+El JAR no incluye una JVM ni es un ejecutable nativo. El asistente de consola
+pregunta explícitamente dónde crear o abrir una bóveda.
 
 ## Descargar y ejecutar
 
@@ -47,62 +47,49 @@ java -jar password-vault-1.1.0.jar --help
 
 ### Lanzador sencillo para Windows
 
-El Release `v1.1.0` incluye [`vault.cmd`](vault.cmd). Descarga los tres assets en
-una carpeta de aplicación y mantenlos juntos: `password-vault-1.1.0.jar`,
-`vault.cmd` y `password-vault-1.1.0.jar.sha256`. Necesitas Java 21 o posterior
-disponible como `java` en `PATH`.
+El Release `v1.1.0` incluye [`vault.cmd`](vault.cmd). Para probar el asistente
+guiado descrito abajo, usa el `vault.cmd` y el JAR construidos desde esta revisión;
+los assets ya publicados de `v1.1.0` no incluyen esta nueva interfaz. Necesitas
+Java 21 o posterior disponible como `java` en `PATH`.
 
 #### Primera configuración
 
-1. Decide dónde guardar la bóveda. La ruta debe señalar **el archivo de bóveda**
-   (por ejemplo, `E:\PasswordVault\mi-boveda.pvlt`), no solo la carpeta
-   `E:\PasswordVault`.
-2. Si la carpeta aún no existe, créala en PowerShell:
-
-   ```powershell
-   New-Item -ItemType Directory -Force 'E:\PasswordVault' | Out-Null
-   ```
-
-3. Si ya tienes un archivo `.pvlt`, conserva una copia y usa su ruta exacta en el
-   paso siguiente. **No ejecutes `create` sobre una bóveda existente.** Si aún no
-   tienes una, abre PowerShell en la carpeta donde están los archivos y créala
-   una sola vez:
-
-   ```powershell
-   java -jar .\password-vault-1.1.0.jar create --vault 'E:\PasswordVault\mi-boveda.pvlt'
-   ```
-
-   La CLI pedirá la contraseña maestra y su confirmación sin mostrarlas en
-   pantalla. No escribas la contraseña como parte del comando.
-4. Haz clic derecho en `vault.cmd` y elige **Editar**. Cambia el marcador de
-   `VAULT_PATH` por la ruta completa del archivo, entre comillas:
-
-   ```bat
-   set "VAULT_PATH=E:\PasswordVault\mi-boveda.pvlt"
-   ```
-
-   Guarda el archivo. No pongas aquí la contraseña maestra.
-5. Haz doble clic en `vault.cmd` e introduce la contraseña maestra que usaste al
-   crear esa bóveda. El lanzador abre `session` directamente y aplica el
-   autobloqueo predeterminado de cinco minutos. Escribe `exit` para cerrar la
-   sesión; pulsa una tecla para cerrar la ventana cuando termine.
-
-Si aparece **«No se pudo abrir la bóveda»**, comprueba que `VAULT_PATH` apunta al
-archivo `.pvlt` correcto (no a una carpeta) y vuelve a introducir la contraseña
-maestra elegida al crearlo. No borres ni vuelvas a crear encima de un archivo
-existente.
+1. Ejecuta `vault.cmd` en una terminal interactiva.
+2. Elige **Crear bóveda nueva** o **Abrir bóveda existente** y escribe la ruta
+   completa del archivo `.pvlt` (no solo una carpeta). Para crearla, el directorio
+   padre ya debe existir y el destino no debe existir.
+3. Introduce la contraseña maestra cuando se solicite. Al crear, confírmala; no
+   se muestra en pantalla ni se guarda en la configuración.
+4. El asistente recuerda únicamente la ruta en
+   `%LOCALAPPDATA%\PasswordVault\vault-path.txt`. Para cambiar de bóveda, mueve o
+   elimina ese archivo de configuración y vuelve a iniciar el asistente.
+5. El menú muestra la bóveda seleccionada y su estado desbloqueado, y organiza las
+   opciones en **Entradas**, **Autenticación TOTP** y **Herramientas**. En terminales
+   estrechas usa una distribución vertical. Los colores discretos se desactivan
+   cuando ANSI no está disponible o se define `NO_COLOR`; la versión monocromática
+   conserva los rótulos y bordes ASCII. Los avisos y errores llevan texto explícito,
+   además del color. Escribe `0` para salir; el autobloqueo predeterminado es de
+   cinco minutos.
 
 #### Ver una contraseña guardada
 
 Dentro de la sesión del lanzador:
 
-1. Escribe `list` para mostrar los IDs, servicios y usuarios guardados.
-2. Escribe `show --id <id>` usando el ID de la entrada que necesitas.
-3. Cuando pregunte **«¿Revelar la contraseña?»**, escribe `sí` para mostrarla en
-   la consola. Cualquier otra respuesta no la revela.
+1. Elige **Ver entrada** o **Buscar servicio** y selecciona el número mostrado.
+   Los números son temporales y solo valen para esa lista.
+2. Cuando pregunte **«¿Revelar la contraseña?»**, escribe `sí` o `si` para
+   mostrarla en la consola. Cualquier otra respuesta no la revela.
 
-La contraseña se muestra en pantalla: evita capturas y no la compartas. También
-puedes escribir `help` para consultar los comandos disponibles. No ejecutes estos
+Para rotar una contraseña, elige **Actualizar contraseña**, selecciona la entrada
+e introduce la contraseña nueva dos veces. Solo se guarda si ambas entradas
+coinciden; servicio, usuario y notas se conservan. Los listados muestran la
+última actualización aproximada de cada entrada y recomiendan cambiarla al llegar
+a seis meses. Es una aproximación basada en la fecha general de actualización,
+no una fecha exacta exclusiva de la contraseña.
+
+La contraseña se muestra en pantalla: evita capturas y no la compartas. La opción
+**Generar contraseña** la muestra por la consola privada y no la guarda
+automáticamente. También puedes elegir **Ayuda** en el menú. No ejecutes estos
 comandos mediante pipes ni redirecciones; la CLI necesita una terminal
 interactiva real y solicita los secretos directamente en ella.
 

@@ -116,7 +116,7 @@ class CliSessionRunnerTest {
     console.passwords.add("synthetic-master".toCharArray());
     console.passwords.add("incorrect-synthetic".toCharArray());
     console.passwords.add("synthetic-master".toCharArray());
-    console.visibleLines.add("sí");
+    console.visibleLines.add("si");
     console.lines.add(TimedLineResult.timedOut());
     console.lines.add(TimedLineResult.line("exit"));
 

@@ -119,8 +119,9 @@ claro en español. El comando no llama a `save()`.
 `show` recibe un ID válido y completo. Si no existe, informa que no se encontró
 la entrada sin exponer información de otras entradas. Si existe, presenta ID,
 servicio, usuario y notas, y pide confirmación antes de revelar la contraseña.
-Solo la respuesta exacta `sí` autoriza la revelación; cualquier otra respuesta,
-incluida una respuesta vacía, cancela la revelación. La contraseña se escribe
+Solo las respuestas exactas `sí` o `si` autorizan la revelación; cualquier otra
+respuesta, incluida una respuesta vacía, con espacios adicionales o mayúsculas,
+cancela la revelación. La contraseña se escribe
 únicamente en la consola interactiva, no en logs, errores ni una salida destinada
 a pipes. La copia `char[]` de la contraseña se borra después de imprimirla o
 cancelar. `show` no guarda cambios.
@@ -129,8 +130,9 @@ cancelar. `show` no guarda cambios.
 
 `delete` recibe un ID válido y completo. Si existe la entrada, muestra su ID,
 servicio y usuario, nunca la contraseña, y pide confirmación. Solo la respuesta
-exacta `sí` borra la entrada y ejecuta `save()`. Cualquier otra respuesta cancela
-sin guardar; cancelar es un resultado normal y no modifica el archivo. Un ID
+exacta `sí` o `si` borra la entrada y ejecuta `save()`. Cualquier otra respuesta,
+incluidos espacios adicionales y mayúsculas, cancela sin guardar; cancelar es un
+resultado normal y no modifica el archivo. Un ID
 desconocido se informa sin modificar la bóveda.
 
 ### R8 — Validación de argumentos e IDs
@@ -173,8 +175,8 @@ cambia el formato ni el modelo de amenazas.
 | AC-5 | La contraseña maestra se solicita sin eco al abrir una bóveda, se usa como `char[]`, se borra la copia que posee la CLI y fallos de autenticación no revelan su causa. |
 | AC-6 | `add` solicita todos los campos, mantiene exactos los campos de texto, valida obligatorios, no guarda entradas parciales y en éxito guarda y presenta un ID de 32 caracteres hexadecimales en minúscula. |
 | AC-7 | `list` conserva orden y muestra solo ID, servicio y usuario; no muestra contraseña ni notas, incluso para una bóveda vacía. |
-| AC-8 | `show` no revela la contraseña sin la respuesta exacta `sí`; al confirmarla la muestra en consola y limpia la copia `char[]`; IDs inválidos o desconocidos no revelan otra entrada. |
-| AC-9 | `delete` modifica y guarda únicamente ante la respuesta exacta `sí`; cancelación, ID inválido o desconocido dejan el archivo sin cambios. |
+| AC-8 | `show` no revela la contraseña sin la respuesta exacta `sí` o `si`; al confirmarla la muestra en consola y limpia la copia `char[]`; IDs inválidos o desconocidos no revelan otra entrada. |
+| AC-9 | `delete` modifica y guarda únicamente ante la respuesta exacta `sí` o `si`; cancelación, ID inválido o desconocido dejan el archivo sin cambios. |
 | AC-10 | Operaciones de consulta nunca guardan cambios; sesiones y recursos se cierran ante éxito, cancelación y error. |
 | AC-11 | Errores y salidas de CLI están en español y no incluyen secretos, contenido de entradas, trazas ni causas sensibles; no se reporta éxito ante una operación fallida. |
 | AC-12 | Las pruebas automatizadas cubren parsing, mensajes/estados, no consola, flujo de cada comando, cancelaciones, persistencia y limpieza de arreglos sensibles bajo propiedad de la CLI. |
@@ -200,7 +202,7 @@ La cobertura incluirá, al menos:
 - Listado ordenado, vacío y comprobación de que no aparecen contraseña ni notas.
 - Consulta de ID válido/inválido/inexistente, confirmación afirmativa/negativa y
   verificación de que la contraseña solo aparece en el canal de consola.
-- Borrado de ID válido con respuesta exacta `sí`, respuesta negativa,
+- Borrado de ID válido con respuesta exacta `sí` o `si`, respuesta negativa,
   cancelación e ID inexistente; archivo persistido sin cambio en cancelaciones.
 - Errores de contraseña maestra, almacenamiento y guardado, confirmando que no
   hay datos parciales, mensajes sensibles ni sesiones abiertas.

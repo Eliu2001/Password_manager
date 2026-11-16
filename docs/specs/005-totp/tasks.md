@@ -239,7 +239,7 @@ sensibles.
 - [x] **T27 — Implementar `remove-totp`** (25 min)\
   **RF:** R3, R5 · **AC:** AC-5, AC-6, AC-8\
   **Hecho cuando:** operación exige versión v2, secreto existente y confirmación
-  exacta `sí`; solo entonces quita, guarda e informa éxito.\
+  exacta `sí` o `si`; solo entonces quita, guarda e informa éxito.\
   **Evidencia:** cancelación, EOF, secreto ausente, ID inexistente y v1 no guardan
   cambios; sesión/master password se limpian y cierran.
 
@@ -267,7 +267,7 @@ sensibles.
 
 - [x] **T31 — Integrar comando `upgrade` en la CLI** (25 min)\
   **RF:** R4, R5 · **AC:** AC-5, AC-7, AC-8\
-  **Hecho cuando:** CLI abre bóveda, pide confirmación exacta `sí`, invoca la
+  **Hecho cuando:** CLI abre bóveda, pide confirmación exacta `sí` o `si`, invoca la
   conversión explícita y reporta éxito solo después de completarse; otra respuesta
   cancela sin guardar.\
   **Evidencia:** mensajes españoles genéricos, sesión/copia maestra cerradas y

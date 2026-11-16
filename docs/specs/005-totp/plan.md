@@ -22,7 +22,7 @@ significa ausencia. Se mantiene el límite de archivo completo de 16 MiB.
 
 El secreto se pide dos veces sin eco. Base32 admite mayúsculas/minúsculas y
 padding correcto opcional; no admite espacios ni separadores. El reemplazo de un
-secreto existente y `upgrade` requieren confirmación exacta `sí`. El código se
+secreto existente y `upgrade` requieren confirmación exacta `sí` o `si`. El código se
 imprime una vez por `CliConsole.printSecret`; los segundos restantes van a la
 salida normal, sin refresco automático.
 
@@ -120,10 +120,10 @@ fuera de su control.
 3. En `set-totp`, pedir dos `char[]` Base32 sin eco. Comparar sin construir
    `String`; ante discrepancia cancelar. Decodificar/validar la primera, borrar
    ambas lecturas y temporales propios en todos los caminos. Si ya existe secreto,
-   pedir confirmación exacta `sí` antes de reemplazar.
+   pedir confirmación exacta `sí` o `si` antes de reemplazar.
 4. El modelo copia el secreto validado; limpiar el arreglo temporal del CLI.
    Llamar `save()` y reportar éxito solo tras guardar.
-5. En `remove-totp`, error si no existe secreto; pedir confirmación exacta `sí`,
+5. En `remove-totp`, error si no existe secreto; pedir confirmación exacta `sí` o `si`,
    retirar/limpiar copia interna y guardar únicamente ante confirmación.
 6. Cerrar sesión y borrar contraseña maestra y secretos temporales aun ante
    cancelación, excepción o fallo de persistencia.
@@ -133,7 +133,7 @@ fuera de su control.
 1. Parsear `upgrade --vault <ruta>` y pasar gate de consola.
 2. Pedir contraseña maestra, abrir/validar completamente v1 y obtener bloqueo
    exclusivo conforme a Storage.
-3. Pedir confirmación exacta `sí`. Otra respuesta cierra sin save ni mutación.
+3. Pedir confirmación exacta `sí` o `si`. Otra respuesta cierra sin save ni mutación.
 4. Serializar en memoria a v2 y comprobar límite de 16 MiB antes de persistir.
 5. Reutilizar la operación atómica de Storage. Revalidar huella antes del move;
    si falla KDF, parsing, serialización, permisos, huella o atomic move, preservar

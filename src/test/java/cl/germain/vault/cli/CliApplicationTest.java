@@ -52,13 +52,29 @@ class CliApplicationTest {
   }
 
   @Test
+  void guidedStartRequiresConsoleBeforeReadingOrCreatingConfiguration() {
+    ScriptedConsole console = new ScriptedConsole(false);
+    VaultStorage storage = new VaultStorage();
+    CliArgumentParser parser = new CliArgumentParser();
+    VaultCliCommands commands = new VaultCliCommands(console, storage);
+    CliSessionRunner runner = new CliSessionRunner(console, storage, commands, parser, () -> 0L);
+    GuidedVaultApplication guided =
+        new GuidedVaultApplication(console, storage, runner, new VaultPathConfig(directory));
+    CliApplication application = new CliApplication(parser, console, commands, runner, guided);
+
+    assertEquals(1, application.run("start"));
+    assertEquals(0, console.readCalls);
+    assertFalse(Files.exists(directory.resolve("PasswordVault")));
+  }
+
+  @Test
   void generateUsesInteractiveGateAndPrivateChannelWithoutVaultAccess() {
     ScriptedConsole console = new ScriptedConsole(true);
     assertEquals(0, app(console).run("generate"));
     assertEquals(1, console.secretWrites);
     assertEquals(20, console.revealedSecret.length);
     assertCleared(console.lastSecretArgument);
-    assertEquals(List.of("Contraseña generada."), console.outputs);
+    assertEquals(List.of("Contraseña generada. No se guarda automáticamente."), console.outputs);
     assertTrue(console.errors.isEmpty());
     Arrays.fill(console.revealedSecret, '\0');
 
@@ -262,7 +278,7 @@ class CliApplicationTest {
     assertCleared(masterForList);
 
     char[] masterForShow = "synthetic-master".toCharArray();
-    ScriptedConsole showConsole = new ScriptedConsole(true, masterForShow, "sí");
+    ScriptedConsole showConsole = new ScriptedConsole(true, masterForShow, "si");
     assertEquals(
         0, app(showConsole, storage).run("show", "--vault", vaultPath.toString(), "--id", id));
     assertArrayEquals("synthetic-entry-password".toCharArray(), showConsole.revealedSecret);
@@ -288,7 +304,7 @@ class CliApplicationTest {
     assertCleared(masterForShowEmpty);
 
     byte[] fileBeforeCancel = Files.readAllBytes(vaultPath);
-    Object[] cancelResponses = {"si", "", END_OF_INPUT, INTERRUPTED};
+    Object[] cancelResponses = {"no", "SI", "sí ", "", END_OF_INPUT, INTERRUPTED};
     for (Object response : cancelResponses) {
       char[] masterForCancel = "synthetic-master".toCharArray();
       ScriptedConsole cancelDelete = new ScriptedConsole(true, masterForCancel, response);
@@ -610,7 +626,7 @@ class CliApplicationTest {
     Arrays.fill(beforeRemoveEof, (byte) 0);
 
     char[] removeMaster = "synthetic-master".toCharArray();
-    ScriptedConsole remove = new ScriptedConsole(true, removeMaster, "sí");
+    ScriptedConsole remove = new ScriptedConsole(true, removeMaster, "si");
     assertEquals(
         0, app(remove, storage).run("remove-totp", "--vault", path.toString(), "--id", idText));
     assertCleared(removeMaster);
@@ -752,14 +768,14 @@ class CliApplicationTest {
     assertCleared(v1TotpMaster);
 
     char[] cancelMaster = "synthetic-master".toCharArray();
-    ScriptedConsole cancel = new ScriptedConsole(true, cancelMaster, "si");
+    ScriptedConsole cancel = new ScriptedConsole(true, cancelMaster, "SI");
     assertEquals(0, app(cancel).run("upgrade", "--vault", path.toString()));
     assertArrayEquals(original, Files.readAllBytes(path));
     assertTrue(cancel.outputs.isEmpty());
     assertCleared(cancelMaster);
 
     char[] confirmMaster = "synthetic-master".toCharArray();
-    ScriptedConsole confirm = new ScriptedConsole(true, confirmMaster, "sí");
+    ScriptedConsole confirm = new ScriptedConsole(true, confirmMaster, "si");
     assertEquals(0, app(confirm).run("upgrade", "--vault", path.toString()));
     assertTrue(String.join("\n", confirm.outputs).contains("formato v2"));
     assertCleared(confirmMaster);

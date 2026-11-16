@@ -73,19 +73,19 @@ public final class SystemCliConsole implements CliConsole, AutoCloseable {
 
   @Override
   public void printOutput(String message) {
-    System.out.println(Objects.requireNonNull(message));
+    System.out.println(ConsoleTheme.system().successMessage(Objects.requireNonNull(message)));
   }
 
   @Override
   public void printError(String message) {
-    System.err.println(Objects.requireNonNull(message));
+    System.err.println(ConsoleTheme.system().errorMessage(Objects.requireNonNull(message)));
   }
 
   @Override
   public void printPrivate(String message) throws IOException {
     requireConsole();
     PrintWriter writer = console.writer();
-    writer.println(Objects.requireNonNull(message));
+    writer.println(ConsoleTheme.system().successMessage(Objects.requireNonNull(message)));
     writer.flush();
     if (writer.checkError()) throw new IOException("Console output failed");
   }

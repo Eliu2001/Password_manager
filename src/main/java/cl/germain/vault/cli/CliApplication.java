@@ -18,6 +18,7 @@ public final class CliApplication {
           + "  Main totp --vault <ruta> --id <id>\n"
           + "  Main upgrade --vault <ruta>\n"
           + "  Main session --vault <ruta> [--timeout-minutes <n>] (predeterminado: 5; rango: 1–60)\n"
+          + "  Main start (asistente y menú guiado)\n"
           + "  Main --help\n"
           + "Comandos: create, add, list, show, delete, generate, set-totp, remove-totp, totp, upgrade, session";
   private static final String CONSOLE_REQUIRED =
@@ -27,6 +28,7 @@ public final class CliApplication {
   private final CliConsole console;
   private final CliCommandHandler handler;
   private final CliSessionRunner sessionRunner;
+  private final GuidedVaultApplication guidedApplication;
 
   public CliApplication(CliArgumentParser parser, CliConsole console) {
     this(parser, console, unavailableHandler(console), null);
@@ -41,13 +43,30 @@ public final class CliApplication {
       CliConsole console,
       CliCommandHandler handler,
       CliSessionRunner sessionRunner) {
+    this(parser, console, handler, sessionRunner, null);
+  }
+
+  public CliApplication(
+      CliArgumentParser parser,
+      CliConsole console,
+      CliCommandHandler handler,
+      CliSessionRunner sessionRunner,
+      GuidedVaultApplication guidedApplication) {
     this.parser = Objects.requireNonNull(parser);
     this.console = Objects.requireNonNull(console);
     this.handler = Objects.requireNonNull(handler);
     this.sessionRunner = sessionRunner;
+    this.guidedApplication = guidedApplication;
   }
 
   public int run(String... arguments) {
+    if (arguments != null && arguments.length == 1 && "start".equals(arguments[0])) {
+      if (guidedApplication == null) {
+        console.printError("Este comando aún no está disponible.");
+        return CliExitStatus.ERROR.code();
+      }
+      return guidedApplication.run();
+    }
     if (arguments != null && arguments.length > 0 && "session".equals(arguments[0])) {
       return runSession(arguments);
     }

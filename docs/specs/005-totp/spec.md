@@ -3,6 +3,10 @@
 **Estado:** aprobada el 2026-11-15; implementación autorizada.  
 **Predecesora:** `docs/specs/004-password-generator/spec.md`, cerrada.
 
+En las confirmaciones existentes, solo las respuestas exactas `sí` y `si`
+(minúsculas, sin espacios adicionales) cuentan como afirmativas; cualquier otra
+entrada cancela o rechaza la operación.
+
 ## 1. Objetivo
 
 Permitir almacenar dentro de la bóveda el secreto TOTP de una cuenta y consultar
@@ -43,7 +47,7 @@ Main upgrade --vault <ruta>
 
 Todos los comandos requieren consola interactiva y contraseña maestra mediante
 los flujos existentes. `set-totp` pide el secreto Base32 sin eco y confirma su
-asociación; `remove-totp` requiere confirmación exacta `sí`; `totp` muestra el
+asociación; `remove-totp` requiere confirmación exacta `sí` o `si`; `totp` muestra el
 código vigente y segundos restantes. `upgrade` realiza una conversión explícita
 de v1 a v2, sin migrar automáticamente al abrir o guardar.
 
@@ -80,10 +84,10 @@ de v1 a v2, sin migrar automáticamente al abrir o guardar.
 ### R3 — Asociación y consulta
 
 - `set-totp` agrega o reemplaza el secreto de la entrada identificada solo
-  después de validarlo. Si ya existe uno, solicita confirmación exacta `sí`;
+  después de validarlo. Si ya existe uno, solicita confirmación exacta `sí` o `si`;
   cualquier otra respuesta cancela. Persiste mediante `save()` y no informa
   éxito antes de guardar.
-- `remove-totp` quita el secreto solo ante la respuesta exacta `sí` y guarda el
+- `remove-totp` quita el secreto solo ante la respuesta exacta `sí` o `si` y guarda el
   cambio. Cancelar no modifica el archivo.
 - `totp` abre la bóveda, calcula una vez el código para la entrada indicada y lo
   entrega por `CliConsole.printSecret`; muestra los segundos restantes por salida
@@ -108,7 +112,7 @@ de v1 a v2, sin migrar automáticamente al abrir o guardar.
 - `upgrade` convierte explícitamente una bóveda v1 a v2 mediante escritura
   atómica, preservando entradas e identificadores. Un fallo conserva intacto el
   archivo v1 y no deja una bóveda parcialmente convertida. Solicita confirmación
-  exacta `sí`; cualquier otra respuesta cancela sin modificar el archivo. Respeta
+  exacta `sí` o `si`; cualquier otra respuesta cancela sin modificar el archivo. Respeta
   bloqueo, permisos, detección de cambios externos y manejo de fallos de Spec 002.
   Si el archivo v2 resultante excede 16 MiB, falla sin reemplazar el original.
 - Se actualiza `docs/FORMAT.md`; v1 continúa documentado y v2 se documenta sin
@@ -174,14 +178,14 @@ de v1 a v2, sin migrar automáticamente al abrir o guardar.
 7. El secreto decodificado mide entre 20 y 64 bytes. `Entry` posee copia
    defensiva `byte[]`; consultas devuelven copias borrables y se limpian las
    copias al reemplazar, quitar o cerrar sesión.
-8. Si ya hay secreto, reemplazar requiere confirmación exacta `sí`. Retirar un
+8. Si ya hay secreto, reemplazar requiere confirmación exacta `sí` o `si`. Retirar un
    secreto inexistente y consultar una entrada sin TOTP fallan claramente sin
    guardar.
 9. Bóvedas nuevas usan v2; v1 se puede abrir/guardar en v1, pero no modificar
    TOTP hasta `upgrade`. El payload v2 añade longitud uint32 y bytes al final de
    cada registro; longitud cero representa ausencia. Se mantiene el máximo de
    archivo de 16 MiB.
-10. `upgrade` requiere confirmación exacta `sí`; cancelar no modifica el archivo.
+10. `upgrade` requiere confirmación exacta `sí` o `si`; cancelar no modifica el archivo.
     El código TOTP se entrega una vez por canal privado, el tiempo restante por
     salida normal y no hay refresco automático.
 

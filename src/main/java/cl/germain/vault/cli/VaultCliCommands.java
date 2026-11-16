@@ -23,6 +23,7 @@ public final class VaultCliCommands implements CliCommandHandler {
   private final VaultStorage storage;
   private final IntFunction<char[]> passwordGenerator;
   private final Clock clock;
+  private boolean guidedOutput;
 
   public VaultCliCommands(CliConsole console, VaultStorage storage) {
     this(console, storage, new PasswordGenerator());
@@ -85,6 +86,48 @@ public final class VaultCliCommands implements CliCommandHandler {
         yield CliExitStatus.ERROR;
       }
     };
+  }
+
+  CliExitStatus executeInGuidedSession(CliCommand command, VaultSession session)
+      throws IOException, DecryptionException, InterruptedException {
+    guidedOutput = true;
+    try {
+      return executeInSession(command, session);
+    } finally {
+      guidedOutput = false;
+    }
+  }
+
+  void updatePasswordInSession(byte[] entryId, VaultSession session)
+      throws IOException, InterruptedException {
+    char[] first = null;
+    char[] second = null;
+    try {
+      Entry entry = session.vault().get(entryId).orElse(null);
+      if (entry == null) {
+        console.printError("No se encontró la entrada solicitada.");
+        return;
+      }
+      first = console.readPassword("Nueva contraseña de la entrada: ");
+      if (first == null) {
+        console.printOutput("Operación cancelada.");
+        return;
+      }
+      second = console.readPassword("Repita la nueva contraseña: ");
+      if (second == null) {
+        console.printOutput("Operación cancelada.");
+        return;
+      }
+      if (!Arrays.equals(first, second)) {
+        console.printError("Las contraseñas no coinciden; no se realizaron cambios.");
+        return;
+      }
+      session.vault().update(entryId, entry.service(), entry.username(), first, entry.notes());
+      session.save();
+      console.printPrivate("Contraseña actualizada correctamente.");
+    } finally {
+      clear(first, second);
+    }
   }
 
   private CliExitStatus runWithSession(
@@ -152,8 +195,8 @@ public final class VaultCliCommands implements CliCommandHandler {
       byte[] old = session.vault().totpSecret(command.entryId()).orElse(null);
       if (old != null) {
         clear(old);
-        if (!"sí"
-            .equals(console.readLine("¿Reemplazar el secreto TOTP? Escriba sí para confirmar: ")))
+        if (!Confirmation.isAffirmative(
+            console.readLine("¿Reemplazar el secreto TOTP? Escriba sí o si para confirmar: ")))
           return CommandResult.status(CliExitStatus.CANCELLED);
       }
       session.vault().setTotpSecret(command.entryId(), decoded);
@@ -178,7 +221,8 @@ public final class VaultCliCommands implements CliCommandHandler {
         console.printError("La entrada no tiene secreto TOTP.");
         return CommandResult.status(CliExitStatus.ERROR);
       }
-      if (!"sí".equals(console.readLine("¿Retirar el secreto TOTP? Escriba sí para confirmar: ")))
+      if (!Confirmation.isAffirmative(
+          console.readLine("¿Retirar el secreto TOTP? Escriba sí o si para confirmar: ")))
         return CommandResult.status(CliExitStatus.CANCELLED);
       session.vault().removeTotpSecret(command.entryId());
       session.save();
@@ -214,7 +258,8 @@ public final class VaultCliCommands implements CliCommandHandler {
       console.printError("La bóveda ya está en formato v2.");
       return CommandResult.status(CliExitStatus.ERROR);
     }
-    if (!"sí".equals(console.readLine("¿Convertir la bóveda a v2? Escriba sí para confirmar: ")))
+    if (!Confirmation.isAffirmative(
+        console.readLine("¿Convertir la bóveda a v2? Escriba sí o si para confirmar: ")))
       return CommandResult.status(CliExitStatus.CANCELLED);
     session.upgradeToV2();
     return CommandResult.output(CliExitStatus.SUCCESS, "Bóveda actualizada a formato v2.");
@@ -225,7 +270,7 @@ public final class VaultCliCommands implements CliCommandHandler {
     try {
       password = passwordGenerator.apply(command.generationLength());
       console.printSecret(password);
-      console.printOutput("Contraseña generada.");
+      console.printOutput("Contraseña generada. No se guarda automáticamente.");
       return CliExitStatus.SUCCESS;
     } finally {
       clear(password);
@@ -275,7 +320,10 @@ public final class VaultCliCommands implements CliCommandHandler {
       try {
         session.save();
         return CommandResult.output(
-            CliExitStatus.SUCCESS, "Entrada guardada. ID: " + CliArgumentParser.formatId(id));
+            CliExitStatus.SUCCESS,
+            guidedOutput
+                ? "Entrada guardada correctamente."
+                : "Entrada guardada. ID: " + CliArgumentParser.formatId(id));
       } finally {
         Arrays.fill(id, (byte) 0);
       }
@@ -292,8 +340,7 @@ public final class VaultCliCommands implements CliCommandHandler {
     } else {
       for (Entry entry : entries) {
         lines.add(
-            CliArgumentParser.formatId(entry.id())
-                + " | "
+            (guidedOutput ? "" : CliArgumentParser.formatId(entry.id()) + " | ")
                 + entry.service()
                 + " | "
                 + entry.username());
@@ -312,15 +359,20 @@ public final class VaultCliCommands implements CliCommandHandler {
         return CommandResult.status(CliExitStatus.ERROR);
       }
       Entry entry = found.orElseThrow();
-      String answer = console.readLine("¿Revelar la contraseña? Escriba sí para confirmar: ");
-      boolean reveal = "sí".equals(answer);
+      String answer = console.readLine("¿Revelar la contraseña? Escriba sí o si para confirmar: ");
+      boolean reveal = Confirmation.isAffirmative(answer);
       if (reveal) entryPassword = entry.password();
       List<String> output =
-          List.of(
-              "ID: " + CliArgumentParser.formatId(entry.id()),
-              "Servicio: " + entry.service(),
-              "Usuario: " + entry.username(),
-              "Notas: " + entry.notes());
+          guidedOutput
+              ? List.of(
+                  "Servicio: " + entry.service(),
+                  "Usuario: " + entry.username(),
+                  "Notas: " + entry.notes())
+              : List.of(
+                  "ID: " + CliArgumentParser.formatId(entry.id()),
+                  "Servicio: " + entry.service(),
+                  "Usuario: " + entry.username(),
+                  "Notas: " + entry.notes());
       char[] secret = entryPassword;
       entryPassword = null;
       return CommandResult.output(
@@ -338,11 +390,12 @@ public final class VaultCliCommands implements CliCommandHandler {
       return CommandResult.status(CliExitStatus.ERROR);
     }
     Entry entry = found.orElseThrow();
-    printVaultContent("ID: " + CliArgumentParser.formatId(entry.id()), privateOutput);
+    if (!guidedOutput)
+      printVaultContent("ID: " + CliArgumentParser.formatId(entry.id()), privateOutput);
     printVaultContent("Servicio: " + entry.service(), privateOutput);
     printVaultContent("Usuario: " + entry.username(), privateOutput);
-    String answer = console.readLine("¿Borrar esta entrada? Escriba sí para confirmar: ");
-    if (!"sí".equals(answer)) return CommandResult.status(CliExitStatus.CANCELLED);
+    String answer = console.readLine("¿Borrar esta entrada? Escriba sí o si para confirmar: ");
+    if (!Confirmation.isAffirmative(answer)) return CommandResult.status(CliExitStatus.CANCELLED);
     session.vault().remove(command.entryId());
     session.save();
     return CommandResult.output(CliExitStatus.SUCCESS, "Entrada borrada correctamente.");

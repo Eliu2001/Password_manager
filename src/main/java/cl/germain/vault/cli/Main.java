@@ -17,11 +17,14 @@ public final class Main {
     CliArgumentParser parser = new CliArgumentParser();
     cl.germain.vault.storage.VaultStorage storage = new cl.germain.vault.storage.VaultStorage();
     VaultCliCommands commands = new VaultCliCommands(console, storage, new PasswordGenerator());
+    CliSessionRunner runner =
+        new CliSessionRunner(console, storage, commands, parser, MonotonicTicker.system());
     return new CliApplication(
             parser,
             console,
             commands,
-            new CliSessionRunner(console, storage, commands, parser, MonotonicTicker.system()))
+            runner,
+            new GuidedVaultApplication(console, storage, runner, new VaultPathConfig()))
         .run(arguments);
   }
 }

@@ -124,6 +124,115 @@ public final class CliSessionRunner {
     }
   }
 
+  /** Runs an already authenticated session, taking ownership and closing it on every exit. */
+  public CliExitStatus runAuthenticated(CliSessionRequest request, VaultSession authenticated)
+      throws IOException, InterruptedException {
+    Objects.requireNonNull(authenticated, "authenticated");
+    long timeoutNanos = Duration.ofMinutes(request.timeoutMinutes()).toNanos();
+    VaultSession session = authenticated;
+    try {
+      long intervalStarted = ticker.read();
+      while (true) {
+        long remaining = timeoutNanos - (ticker.read() - intervalStarted);
+        if (remaining <= 0) {
+          session.close();
+          session = authenticate(request);
+          if (session == null) return CliExitStatus.CANCELLED;
+          intervalStarted = ticker.read();
+          continue;
+        }
+        TimedLineResult input = console.readLineUntil("vault> ", remaining);
+        if (input.kind() == TimedLineResult.Kind.END_OF_INPUT) return CliExitStatus.CANCELLED;
+        if (input.kind() == TimedLineResult.Kind.TIMED_OUT) {
+          session.close();
+          console.discardPendingLine();
+          console.printOutput(LOCKED);
+          session = authenticate(request);
+          if (session == null) return CliExitStatus.CANCELLED;
+          intervalStarted = ticker.read();
+          continue;
+        }
+        try {
+          CliSessionCommand command = parser.parseSessionCommand(input.line(), request.vaultPath());
+          if (command.kind() == CliSessionCommand.Kind.EXIT) return CliExitStatus.SUCCESS;
+          if (command.kind() == CliSessionCommand.Kind.HELP) {
+            console.printOutput(SESSION_HELP);
+          } else {
+            commands.executeInSession(command.vaultCommand(), session);
+          }
+        } catch (CliArgumentException exception) {
+          console.printError(exception.getMessage());
+        } catch (DecryptionException exception) {
+          console.printError("No se pudo completar la operación.");
+          return CliExitStatus.ERROR;
+        }
+        intervalStarted = ticker.read();
+      }
+    } finally {
+      try {
+        if (session != null) session.close();
+      } finally {
+        console.close();
+      }
+    }
+  }
+
+  /** Runs the guided menu on an already authenticated session and owns its lifecycle. */
+  public CliExitStatus runGuided(CliSessionRequest request, VaultSession authenticated)
+      throws IOException, InterruptedException {
+    Objects.requireNonNull(authenticated, "authenticated");
+    long timeoutNanos = Duration.ofMinutes(request.timeoutMinutes()).toNanos();
+    VaultSession session = authenticated;
+    try {
+      GuidedVaultMenu menu = new GuidedVaultMenu(console, commands, request.vaultPath());
+      long intervalStarted = ticker.read();
+      while (true) {
+        menu.show();
+        long remaining = timeoutNanos - (ticker.read() - intervalStarted);
+        TimedLineResult input = console.readLineUntil("Opción: ", Math.max(0, remaining));
+        if (input.kind() == TimedLineResult.Kind.END_OF_INPUT) return CliExitStatus.CANCELLED;
+        if (input.kind() == TimedLineResult.Kind.TIMED_OUT) {
+          session.close();
+          console.discardPendingLine();
+          console.printOutput(LOCKED);
+          session = authenticate(request);
+          if (session == null) return CliExitStatus.CANCELLED;
+          intervalStarted = ticker.read();
+          continue;
+        }
+        if (timeoutNanos - (ticker.read() - intervalStarted) <= 0) {
+          session.close();
+          console.printOutput(LOCKED + " Se descartó la entrada recibida.");
+          session = authenticate(request);
+          if (session == null) return CliExitStatus.CANCELLED;
+          intervalStarted = ticker.read();
+          continue;
+        }
+        boolean exit = menu.step(session, input.line());
+        if (exit) return CliExitStatus.SUCCESS;
+        long actionFinished = ticker.read();
+        if (timeoutNanos - (actionFinished - intervalStarted) <= 0) {
+          session.close();
+          console.printOutput(LOCKED);
+          session = authenticate(request);
+          if (session == null) return CliExitStatus.CANCELLED;
+          intervalStarted = ticker.read();
+        } else {
+          intervalStarted = actionFinished;
+        }
+      }
+    } catch (DecryptionException exception) {
+      console.printError("No se pudo completar la operación.");
+      return CliExitStatus.ERROR;
+    } finally {
+      try {
+        if (session != null) session.close();
+      } finally {
+        console.close();
+      }
+    }
+  }
+
   private VaultSession authenticate(CliSessionRequest request)
       throws IOException, InterruptedException {
     while (true) {
@@ -135,7 +244,8 @@ public final class CliSessionRunner {
           return storage.open(request.vaultPath(), masterPassword);
         } catch (DecryptionException | IOException exception) {
           console.printError("No se pudo abrir la bóveda.");
-          if (!"sí".equals(console.readLine("¿Reintentar? Escriba sí para confirmar: "))) {
+          if (!Confirmation.isAffirmative(
+              console.readLine("¿Reintentar? Escriba sí o si para confirmar: "))) {
             return null;
           }
         }

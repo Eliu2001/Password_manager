@@ -1,4 +1,27 @@
-# Estado del proyecto — 2026-11-15
+# Estado del proyecto — 2026-11-16
+
+## Spec 010 — Asistente y menú guiado de consola (en implementación)
+
+- **Spec aprobada:** `docs/specs/010-guided-console-ux/spec.md`.
+- **Plan/tareas:** `docs/specs/010-guided-console-ux/plan.md` y `tasks.md`.
+- **Implementado hasta ahora:** almacenamiento UTF-8 de una sola ruta absoluta
+  bajo `%LOCALAPPDATA%\PasswordVault\vault-path.txt`; asistente `start` para crear
+  o abrir; transferencia de la sesión autenticada al runner con autobloqueo;
+  menú numerado por categorías, contexto de bóveda, tabla de entradas con
+  antigüedad aproximada basada en `updatedAt`, tema ANSI discreto con fallback
+  ASCII y opciones CRUD/TOTP/upgrade/generador; `vault.cmd` inicia `start`; README
+  actualizado. Las confirmaciones exactas aceptan `sí` o `si`, sin espacios ni
+  variantes de mayúsculas.
+- **Verificación local del rediseño:** `./mvnw.cmd verify` — **BUILD SUCCESS**,
+  137 pruebas, 0 fallos, 0 errores y 1 omitida por symlink no disponible en
+  Windows. Spotless y `git diff --check` pasaron. El build reconstruyó el JAR;
+  no se hizo una validación manual del flujo con TTY ni del launcher ejecutado
+  desde una terminal real.
+- **Pendiente antes del cierre:** completar la matriz AC-1–AC-13 y las pruebas que
+  faltan para wizard/índices/timeout; validar creación/apertura y launcher en una
+  terminal real. El ancho se estima desde `COLUMNS` (80 por defecto), no se
+  detectan redimensionamientos en vivo. La antigüedad usa `updatedAt` como
+  aproximación, no como fecha exacta del cambio de contraseña.
 
 ## Spec cerrada
 
