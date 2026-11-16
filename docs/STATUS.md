@@ -39,6 +39,27 @@
   `git diff --check` pasaron. No se realizó una prueba manual TTY específica de
   este cambio.
 
+## Spec 013 — Preparación del Release 1.2.1 (cerrada localmente)
+
+- **Estado:** candidato preparado y cambios del repositorio enviados a
+  `origin/main`; no se publicó el Release.
+- **Documentos:** `docs/specs/013-release-1.2.1/`.
+- **Versión:** POM `1.2.1`; `vault.cmd` busca el JAR `1.2.1` e inicia `start`.
+  README conserva `v1.2.0` como último Release publicado y presenta `v1.2.1` como
+  candidato local.
+- **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 145 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible en Windows. Spotless y
+  `git diff --check` pasaron. JAR staged ejecuta `--help` con estado 0 y lista
+  `start`.
+- **Staging:** `C:\Users\villa\Downloads\password-vault-v1.2.1-release`; contiene
+  exactamente `password-vault-1.2.1.jar` (6,772,248 bytes), `vault.cmd` (591 bytes)
+  y `password-vault-1.2.1.jar.sha256` (64 caracteres hexadecimales).
+- **SHA-256 del JAR staged:**
+  `6aeb92e8b530be88bb231dfdf7ba203ce5953e7b8b5fe305c8bc7aaba6468a5e`; el hash
+  recalculado sobre la copia staged coincidió.
+- **Pendiente:** no crear tag `v1.2.1`, GitHub Release ni subir assets sin
+  autorización específica.
+
 ## Spec cerrada
 
 - **Spec:** `docs/specs/001-crypto-core/spec.md` — Spec 001, `crypto-core`.

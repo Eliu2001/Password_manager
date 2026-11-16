@@ -3,7 +3,8 @@
 Password Vault es un gestor local de credenciales cifradas. La bóveda se guarda
 en un archivo local y la CLI solicita contraseñas y otros secretos mediante una
 terminal interactiva. La última versión publicada es la **1.2.0**, que incluye
-el asistente y menú guiados de consola.
+el asistente y menú guiados. La versión **1.2.1** está preparada localmente, pero
+su Release todavía no está publicado.
 
 ## Requisitos
 
@@ -185,6 +186,9 @@ el artefacto distribuido.
   guiado. Descarga sus assets desde el [GitHub Release](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.0).
 - **Histórico:** `v1.1.0` sigue disponible, pero contiene la interfaz CLI anterior
   y no incluye el asistente ni el menú guiados.
+- **Candidato preparado:** `v1.2.1` incorpora las mejoras recientes de navegación
+  y presentación de contraseñas. Sus assets están preparados localmente, pero
+  aún no hay un Release descargable; usa `v1.2.0` hasta que se publique.
 
 El checksum verifica coincidencia de bytes, no es una firma digital. No se incluyen
 instalador nativo ni runtime Java.
