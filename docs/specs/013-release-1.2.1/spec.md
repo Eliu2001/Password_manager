@@ -1,6 +1,6 @@
 # Spec 013 — Preparación del Release 1.2.1
 
-**Estado:** preparación local cerrada el 2026-11-16; AC-1–AC-6 cubiertos. Release remoto no publicado.
+**Estado:** preparación local cerrada el 2026-11-16; AC-1–AC-6 cubiertos. El usuario publicó posteriormente `v1.2.1`; README y `docs/STATUS.md` reflejan la publicación.
 **Predecesoras:** Specs 011 (`release-1.2.0`) y 012 (`guided-navigation-and-secret-display`), cerradas.
 
 ## 1. Objetivo

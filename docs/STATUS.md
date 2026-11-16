@@ -24,8 +24,9 @@
 - **Cierre:** T01–T18 completadas; AC-1–AC-13 cubiertos según las pruebas y la
   validación manual reportada. No se modificaron `docs/FORMAT.md` ni
   `docs/THREAT_MODEL.md`.
-- **Distribución vigente:** `v1.2.0` está publicado e incluye la interfaz guiada;
-  `v1.1.0` permanece como versión histórica con la CLI anterior.
+- **Distribución vigente:** `v1.2.1` está publicado e incluye las mejoras de
+  navegación guiada y presentación de contraseñas. `v1.2.0` y `v1.1.0` permanecen
+  como versiones históricas.
 
 ## Spec 012 — Navegación recuperable y contraseña etiquetada (cerrada)
 
@@ -39,14 +40,14 @@
   `git diff --check` pasaron. No se realizó una prueba manual TTY específica de
   este cambio.
 
-## Spec 013 — Preparación del Release 1.2.1 (cerrada localmente)
+## Spec 013 — Release 1.2.1
 
-- **Estado:** candidato preparado y cambios del repositorio enviados a
-  `origin/main`; no se publicó el Release.
+- **Estado:** Release publicado el 2026-11-16 después de cerrar la preparación
+  local; README actualizado tras verificar los assets públicos.
 - **Documentos:** `docs/specs/013-release-1.2.1/`.
-- **Versión:** POM `1.2.1`; `vault.cmd` busca el JAR `1.2.1` e inicia `start`.
-  README conserva `v1.2.0` como último Release publicado y presenta `v1.2.1` como
-  candidato local.
+- **Versión/tag:** POM `1.2.1`; `vault.cmd` busca el JAR `1.2.1` e inicia `start`.
+  GitHub Release [`v1.2.1`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.1);
+  el tag apunta al commit `0597bf3`.
 - **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 145 pruebas, 0 fallos,
   0 errores y 1 omitida por symlink no disponible en Windows. Spotless y
   `git diff --check` pasaron. JAR staged ejecuta `--help` con estado 0 y lista
@@ -57,8 +58,14 @@
 - **SHA-256 del JAR staged:**
   `6aeb92e8b530be88bb231dfdf7ba203ce5953e7b8b5fe305c8bc7aaba6468a5e`; el hash
   recalculado sobre la copia staged coincidió.
-- **Pendiente:** no crear tag `v1.2.1`, GitHub Release ni subir assets sin
-  autorización específica.
+- **Assets publicados:** `password-vault-1.2.1.jar` (6,772,248 bytes), `vault.cmd`
+  (591 bytes) y `password-vault-1.2.1.jar.sha256` (64 caracteres).
+  GitHub reporta el SHA-256 del JAR como
+  `6aeb92e8b530be88bb231dfdf7ba203ce5953e7b8b5fe305c8bc7aaba6468a5e`, que
+  coincide con el checksum recalculado sobre el staging local.
+- **README:** actualizado para enlazar `v1.2.1` y usar sus nombres en las
+  instrucciones de descarga, verificación y ejecución. `v1.2.0` queda identificado
+  como histórico.
 
 ## Spec cerrada
 

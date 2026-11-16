@@ -2,9 +2,8 @@
 
 Password Vault es un gestor local de credenciales cifradas. La bóveda se guarda
 en un archivo local y la CLI solicita contraseñas y otros secretos mediante una
-terminal interactiva. La última versión publicada es la **1.2.0**, que incluye
-el asistente y menú guiados. La versión **1.2.1** está preparada localmente, pero
-su Release todavía no está publicado.
+terminal interactiva. La última versión publicada es la **1.2.1**, que incluye
+las mejoras de navegación guiada y visualización etiquetada de contraseñas.
 
 ## Requisitos
 
@@ -17,24 +16,24 @@ pregunta explícitamente dónde crear o abrir una bóveda.
 
 ## Descargar y ejecutar
 
-Descarga del [GitHub Release `v1.2.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.0)
-los tres archivos: `password-vault-1.2.0.jar`, `vault.cmd` y
-`password-vault-1.2.0.jar.sha256`. Guarda los tres en la misma carpeta; el
+Descarga del [GitHub Release `v1.2.1`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.1)
+los tres archivos: `password-vault-1.2.1.jar`, `vault.cmd` y
+`password-vault-1.2.1.jar.sha256`. Guarda los tres en la misma carpeta; el
 checksum contiene el SHA-256 hexadecimal del JAR.
 
 En Windows PowerShell, verifica el checksum con el mismo directorio de descarga:
 
 ```powershell
-$expected = (Get-Content .\password-vault-1.2.0.jar.sha256 -Raw).Trim().ToLowerInvariant()
-$actual = (Get-FileHash .\password-vault-1.2.0.jar -Algorithm SHA256).Hash.ToLowerInvariant()
+$expected = (Get-Content .\password-vault-1.2.1.jar.sha256 -Raw).Trim().ToLowerInvariant()
+$actual = (Get-FileHash .\password-vault-1.2.1.jar -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($expected -ne $actual) { throw 'El checksum no coincide' }
 ```
 
 En Linux y otros sistemas POSIX:
 
 ```sh
-expected=$(cat password-vault-1.2.0.jar.sha256)
-actual=$(sha256sum password-vault-1.2.0.jar | cut -d ' ' -f 1)
+expected=$(cat password-vault-1.2.1.jar.sha256)
+actual=$(sha256sum password-vault-1.2.1.jar | cut -d ' ' -f 1)
 test "$expected" = "$actual" && echo "Checksum correcto" || echo "Checksum incorrecto"
 ```
 
@@ -44,12 +43,12 @@ una firma digital ni autentica por sí solo quién publicó ambos archivos.
 Muestra la ayuda:
 
 ```text
-java -jar password-vault-1.2.0.jar --help
+java -jar password-vault-1.2.1.jar --help
 ```
 
 ### Lanzador sencillo para Windows
 
-El `vault.cmd` adjunto al Release `v1.2.0` inicia el asistente guiado. En Windows,
+El `vault.cmd` adjunto al Release `v1.2.1` inicia el asistente guiado. En Windows,
 ábrelo desde una terminal interactiva. Necesitas Java 21 o posterior disponible
 como `java` en `PATH`; no combines el launcher ni el JAR con archivos de otra
 versión.
@@ -57,13 +56,13 @@ versión.
 También puedes iniciar el asistente directamente desde el JAR:
 
 ```powershell
-java -jar .\password-vault-1.2.0.jar start
+java -jar .\password-vault-1.2.1.jar start
 ```
 
 En Linux/macOS:
 
 ```sh
-java -jar ./password-vault-1.2.0.jar start
+java -jar ./password-vault-1.2.1.jar start
 ```
 
 Usa una terminal interactiva real; no pipes ni redirecciones. El flujo guiado
@@ -119,22 +118,22 @@ Indica siempre una ruta explícita para la bóveda. Por ejemplo, para crear una
 bóveda ficticia en el directorio actual:
 
 ```text
-java -jar password-vault-1.2.0.jar create --vault ./example.pvlt
+java -jar password-vault-1.2.1.jar create --vault ./example.pvlt
 ```
 
 La CLI también ofrece:
 
 ```text
-java -jar password-vault-1.2.0.jar add --vault ./example.pvlt
-java -jar password-vault-1.2.0.jar list --vault ./example.pvlt
-java -jar password-vault-1.2.0.jar show --vault ./example.pvlt --id <id>
-java -jar password-vault-1.2.0.jar delete --vault ./example.pvlt --id <id>
-java -jar password-vault-1.2.0.jar set-totp --vault ./example.pvlt --id <id>
-java -jar password-vault-1.2.0.jar remove-totp --vault ./example.pvlt --id <id>
-java -jar password-vault-1.2.0.jar totp --vault ./example.pvlt --id <id>
-java -jar password-vault-1.2.0.jar upgrade --vault ./example.pvlt
-java -jar password-vault-1.2.0.jar session --vault ./example.pvlt --timeout-minutes 5
-java -jar password-vault-1.2.0.jar generate --length 20
+java -jar password-vault-1.2.1.jar add --vault ./example.pvlt
+java -jar password-vault-1.2.1.jar list --vault ./example.pvlt
+java -jar password-vault-1.2.1.jar show --vault ./example.pvlt --id <id>
+java -jar password-vault-1.2.1.jar delete --vault ./example.pvlt --id <id>
+java -jar password-vault-1.2.1.jar set-totp --vault ./example.pvlt --id <id>
+java -jar password-vault-1.2.1.jar remove-totp --vault ./example.pvlt --id <id>
+java -jar password-vault-1.2.1.jar totp --vault ./example.pvlt --id <id>
+java -jar password-vault-1.2.1.jar upgrade --vault ./example.pvlt
+java -jar password-vault-1.2.1.jar session --vault ./example.pvlt --timeout-minutes 5
+java -jar password-vault-1.2.1.jar generate --length 20
 ```
 
 Los IDs se obtienen al listar las entradas. La sesión mantiene la bóveda abierta
@@ -182,13 +181,10 @@ el artefacto distribuido.
 
 ## Estado de distribución
 
-- **Publicado:** `v1.2.0` es la última versión descargable e incluye el flujo
-  guiado. Descarga sus assets desde el [GitHub Release](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.0).
-- **Histórico:** `v1.1.0` sigue disponible, pero contiene la interfaz CLI anterior
-  y no incluye el asistente ni el menú guiados.
-- **Candidato preparado:** `v1.2.1` incorpora las mejoras recientes de navegación
-  y presentación de contraseñas. Sus assets están preparados localmente, pero
-  aún no hay un Release descargable; usa `v1.2.0` hasta que se publique.
+- **Publicado:** `v1.2.1` es la última versión descargable. Descarga sus tres
+  assets desde el [GitHub Release](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.1).
+- **Histórico:** `v1.2.0` incluye el flujo guiado inicial; `v1.1.0` contiene la
+  interfaz CLI anterior. No combines assets de versiones distintas.
 
 El checksum verifica coincidencia de bytes, no es una firma digital. No se incluyen
 instalador nativo ni runtime Java.

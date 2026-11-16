@@ -33,5 +33,8 @@ La ayuda del JAR staged termina con estado 0 y muestra `start`. Staging contiene
 exactamente `password-vault-1.2.1.jar` (6,772,248 bytes), `vault.cmd` (591 bytes)
 y `password-vault-1.2.1.jar.sha256` (64 caracteres). SHA-256 recalculado sobre
 el JAR staged: `6aeb92e8b530be88bb231dfdf7ba203ce5953e7b8b5fe305c8bc7aaba6468a5e`.
-Cambios del repositorio comprometidos y enviados a `origin/main`; no se creó tag,
-Release ni se cargaron assets.
+Cambios del repositorio comprometidos y enviados a `origin/main`. Después, el
+usuario publicó el Release manualmente con los tres assets. El tag `v1.2.1` apunta
+a `0597bf3`; GitHub informa para el JAR SHA-256
+`6aeb92e8b530be88bb231dfdf7ba203ce5953e7b8b5fe305c8bc7aaba6468a5e`, igual al
+hash del staging.
