@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-set "JAR_PATH=%~dp0password-vault-1.2.1.jar"
+set "JAR_PATH=%~dp0password-vault-1.2.2.jar"
 
 if not exist "%JAR_PATH%" goto jar_error
 
@@ -13,7 +13,7 @@ set "VAULT_EXIT_CODE=%ERRORLEVEL%"
 goto finish
 
 :jar_error
-echo Error: no se encuentra password-vault-1.2.1.jar junto a vault.cmd.
+echo Error: no se encuentra password-vault-1.2.2.jar junto a vault.cmd.
 echo Coloca ambos archivos en la misma carpeta.
 set "VAULT_EXIT_CODE=1"
 goto finish

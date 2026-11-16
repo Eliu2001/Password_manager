@@ -1,6 +1,27 @@
 # Estado del proyecto — 2026-11-16
 
-## Spec 014 — Configuración del asistente guiado en Linux (en curso)
+## Spec 015 — Preparación del Release 1.2.2
+
+- **Estado:** preparación local cerrada el 2026-11-16; no publicado.
+- **Versión:** POM `1.2.2`; `vault.cmd` busca `password-vault-1.2.2.jar` e inicia
+  `start`. `v1.2.1` sigue siendo el último Release publicado.
+- **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 152 pruebas, 0 fallos,
+  0 errores y 4 omitidas (3 requieren capacidades POSIX; 1 prueba de symlink no
+  disponible en Windows). Spotless y `git diff --check` pasaron. El JAR ejecuta
+  `--help` con estado 0 y muestra `start`.
+- **CI Linux:** workflow Verify para el commit `8287ced`
+  ([run 43918018604](https://github.com/Eliu2001/Password_manager/actions/runs/43918018604))
+  terminó en **success**, incluida la suite con filesystem Linux.
+- **Staging:** `C:\Users\villa\Downloads\password-vault-v1.2.2-release`; contiene
+  exactamente `password-vault-1.2.2.jar` (6,773,679 bytes), `vault.cmd` (591 bytes)
+  y `password-vault-1.2.2.jar.sha256` (64 caracteres).
+- **SHA-256 staged:**
+  `d3f800ed737efde6f4441b91ad2dff05f56743f4bd6739d313682c431b4216f9`; recalculado
+  sobre el JAR final y coincide con el archivo `.sha256`.
+- **Pendiente:** tag, GitHub Release y carga remota de assets no se hicieron.
+  Tampoco se realizó una prueba manual de `start` en TTY Linux.
+
+## Spec 014 — Configuración del asistente guiado en Linux (TTY pendiente)
 
 - **Spec:** `docs/specs/014-linux-guided-config/spec.md`, aprobada por el usuario
   el 2026-11-16.
@@ -11,9 +32,9 @@
 - **Verificación local Windows:** `./mvnw.cmd verify` — BUILD SUCCESS, 152 pruebas,
   0 fallos, 0 errores y 4 omitidas (3 requieren capacidades POSIX; 1 prueba de
   symlink no disponible). Spotless pasó.
-- **Pendiente para cierre:** ejecutar `mvn verify` en Linux para verificar permisos
-  POSIX en filesystem real y probar `start` en una TTY Linux. No se afirma que el
-  JAR `v1.2.1` publicado esté corregido ni se ha publicado una nueva versión.
+- **CI Linux:** Verify para commit `8287ced` terminó success y ejecutó las pruebas
+  POSIX sobre filesystem Linux. Pendiente para cierre: prueba manual de `start` en
+  TTY Linux. No se afirma que el JAR `v1.2.1` publicado esté corregido.
 
 ## Spec 010 — Asistente y menú guiado de consola (cerrada)
 
