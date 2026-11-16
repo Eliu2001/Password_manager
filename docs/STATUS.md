@@ -208,3 +208,42 @@
   [`v1.0.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.0.0)
   publicado con JAR y checksum. Se descargaron los dos adjuntos, se confirmó que
   el SHA-256 publicado coincide con el JAR y que el JAR ejecuta `--help`.
+
+## Spec 008 — Lanzador para Windows
+
+- **Estado:** cerrada el 2026-11-15; AC-1–AC-8 cubiertos.
+- **Plan/tareas:** `docs/specs/008-windows-launcher/plan.md` y
+  `docs/specs/008-windows-launcher/tasks.md`.
+- **Implementado:** `vault.cmd` configurable mediante `VAULT_PATH`, que resuelve
+  el JAR junto al script, valida Java/JAR/configuración, inicia la sesión
+  interactiva y mantiene visible el resultado sin perder el código de salida.
+  README documenta instalación/configuración y primer uso. No se cambió Java,
+  dependencias, formato, Threat Model ni Release.
+- **Validación Windows:** Java de prueba confirmó ruta con espacios como un solo
+  argumento, resolución del JAR desde la carpeta del script al iniciar desde otro
+  directorio, invocación `session` sin timeout añadido, rechazo de configuración
+  vacía/marcador, errores por Java/JAR ausentes y conservación de códigos 0/7 tras
+  la pausa.
+- **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 120 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible. `git diff --check` pasó.
+- **Limitación opcional:** no se hizo un inicio manual con TTY real y bóveda de
+  prueba; los escenarios del `.cmd` se probaron con Java de prueba sin secretos.
+
+## Spec 009 — Release 1.1.0 con lanzador Windows
+
+- **Estado:** preparación local cerrada el 2026-11-15; AC-1–AC-7 cubiertos.
+- **Plan/tareas:** `docs/specs/009-release-1.1.0/plan.md` y
+  `docs/specs/009-release-1.1.0/tasks.md`.
+- **Versión/assets:** POM `1.1.0`; staging externo en carpeta de Downloads con
+  `password-vault-1.1.0.jar` (6,749,826 bytes), `vault.cmd` (999 bytes) y
+  `password-vault-1.1.0.jar.sha256` (64 caracteres hexadecimales).
+- **SHA-256 del JAR staged:**
+  `cd741c0e3cd0d8155fe46cc645bc209568a3a3db47552a0c3bada722b0c6c44b`; el hash
+  se recalculó sobre la copia final y coincidió. El JAR staged ejecuta `--help`.
+- **Validación:** `./mvnw.cmd verify` — BUILD SUCCESS, 120 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible. El launcher actualizado
+  confirmó en Windows el JAR 1.1.0 y argumentos con ruta sintética que contiene
+  espacios. `git diff --check` pasó.
+- **Pendiente remoto:** no se hizo push, no se creó tag `v1.1.0` ni GitHub Release.
+  El usuario debe subir los cambios, crear el Release y adjuntar los tres assets;
+  la publicación remota sigue siendo manual.
