@@ -1,6 +1,6 @@
 # Spec 011 — Preparación del Release 1.2.0
 
-**Estado:** preparación local cerrada el 2026-11-16; AC-1–AC-6 cubiertos. Publicación del Release no autorizada.
+**Estado:** preparación local cerrada el 2026-11-16; AC-1–AC-6 cubiertos. El usuario publicó posteriormente `v1.2.0`; ver `docs/STATUS.md`.
 **Predecesora:** Spec 010 (`guided-console-ux`), cerrada.
 
 ## 1. Objetivo

@@ -24,9 +24,8 @@
 - **Cierre:** T01–T18 completadas; AC-1–AC-13 cubiertos según las pruebas y la
   validación manual reportada. No se modificaron `docs/FORMAT.md` ni
   `docs/THREAT_MODEL.md`.
-- **Distribución vigente:** `v1.1.0` está publicado y contiene la interfaz
-  anterior. El siguiente objetivo de distribución es `v1.2.0`; la preparación se
-  registra en la Spec 011.
+- **Distribución vigente:** `v1.2.0` está publicado e incluye la interfaz guiada;
+  `v1.1.0` permanece como versión histórica con la CLI anterior.
 
 ## Spec cerrada
 
@@ -279,14 +278,13 @@
   `cd741c0e3cd0d8155fe46cc645bc209568a3a3db47552a0c3bada722b0c6c44b` y no
   contiene la interfaz guiada de Spec 010.
 
-## Spec 011 — Preparación del Release 1.2.0 (cerrada localmente)
+## Spec 011 — Release 1.2.0
 
-- **Estado:** preparación local cerrada; GitHub Release pendiente. El usuario
-  autorizó el push de los cambios del repositorio, pero no la publicación del
-  Release ni la carga de assets.
+- **Estado:** Release publicado el 2026-11-16; preparación local y publicación
+  verificadas.
 - **Spec/plan/tareas:** `docs/specs/011-release-1.2.0/`.
-- **Objetivo:** `1.2.0`, con interfaz guiada; `v1.1.0` permanece como última
-  versión publicada hasta que el usuario publique manualmente la nueva.
+- **Release/tag:** [`v1.2.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.2.0);
+  el tag apunta al commit `e17710b`.
 - **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 143 pruebas, 0 fallos,
   0 errores y 1 omitida por symlink no disponible en Windows. `git diff --check`
   pasó. `java -jar target/password-vault.jar --help` mostró el comando `start`.
@@ -297,6 +295,9 @@
   `c4bb0a28ab426c4ba1b29d1c6641f80c42d8fcd9026802c7a8689239a2fbc341`; se
   recalculó sobre la copia staged y coincidió. El JAR staged ejecuta `--help`
   con estado 0 y muestra el comando `start`.
-- **Pendiente remoto:** no se creó tag `v1.2.0`, no se publicó GitHub Release y
-  no se subieron assets. El commit local se enviará a `origin/main` con la
-  autorización expresa del usuario.
+- **Assets publicados:** `password-vault-1.2.0.jar` (6,771,889 bytes),
+  `vault.cmd` (591 bytes) y `password-vault-1.2.0.jar.sha256` (64 caracteres).
+  GitHub reporta el digest SHA-256 del JAR como
+  `c4bb0a28ab426c4ba1b29d1c6641f80c42d8fcd9026802c7a8689239a2fbc341`, igual al
+  checksum del staging local.
+- **Repositorio:** commit `e17710b` enviado a `origin/main`; el árbol quedó limpio.

@@ -8,13 +8,13 @@
 - [x] **T03 — Preparar staging externo** · R2, R5, AC-3, AC-4
   - Crear carpeta solo si no existe; copiar JAR/launcher, calcular y verificar SHA.
 - [x] **T04 — Registrar cierre local** · R6, AC-6
-  - Actualizar `docs/STATUS.md` con tamaños, hash y pendiente de publicación.
+  - Actualizar `docs/STATUS.md` con tamaños, hash y estado de publicación.
   - Verificar diff; no crear tag/Release ni subir assets.
 
 ## Cierre
 
-Cerrar T01–T04 únicamente con la evidencia registrada. El Release remoto queda
-sin publicar hasta que el usuario realice manualmente los pasos correspondientes.
+Cerrar T01–T04 únicamente con la evidencia registrada. La publicación remota era
+posterior y separada de esta preparación local.
 
 **Resultado — 2026-11-16:** POM y launcher actualizados; `./mvnw.cmd verify`
 BUILD SUCCESS con 143 pruebas (0 fallos, 0 errores, 1 omitida por symlink no
@@ -23,6 +23,7 @@ disponible en Windows). La ayuda del JAR staged ejecutó con estado 0 y mostró
 bytes), checksum (64 caracteres hexadecimales) y launcher (591 bytes). SHA-256
 recalculado sobre la copia staged:
 `c4bb0a28ab426c4ba1b29d1c6641f80c42d8fcd9026802c7a8689239a2fbc341`.
-En el cierre de preparación no se creó tag/Release ni se subieron assets. El
-usuario autorizó después el push del commit de cambios del repositorio; esa
-autorización no incluye publicar el Release.
+En el cierre de preparación no se creó tag/Release ni se subieron assets. Después,
+el usuario publicó el Release manualmente: tag `v1.2.0` apuntando a `e17710b`, con
+los tres assets preparados. GitHub reporta el SHA-256 del JAR como
+`c4bb0a28ab426c4ba1b29d1c6641f80c42d8fcd9026802c7a8689239a2fbc341`.
