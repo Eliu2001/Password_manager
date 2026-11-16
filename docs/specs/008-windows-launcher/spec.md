@@ -1,6 +1,6 @@
 # Spec 008 — Lanzador para Windows
 
-**Estado:** cerrada el 2026-11-15; AC-1–AC-8 cubiertos.  
+**Estado:** cerrada el 2026-11-15; AC-1–AC-8 cubiertos.
 **Predecesora:** `docs/specs/007-distribution/spec.md`, cerrada y publicada.
 
 ## 1. Objetivo

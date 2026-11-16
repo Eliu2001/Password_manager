@@ -1,6 +1,6 @@
 # Spec 009 — Release 1.1.0 con lanzador Windows
 
-**Estado:** preparación local cerrada el 2026-11-15; AC-1–AC-7 cubiertos.  
+**Estado:** preparación local cerrada el 2026-11-15; AC-1–AC-7 cubiertos.
 **Predecesoras:** Spec 007 (`distribution`) y Spec 008 (`windows-launcher`), cerradas.
 
 ## 1. Objetivo
