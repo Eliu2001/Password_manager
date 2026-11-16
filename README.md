@@ -47,27 +47,64 @@ java -jar password-vault-1.1.0.jar --help
 
 ### Lanzador sencillo para Windows
 
-El repositorio incluye [`vault.cmd`](vault.cmd) para iniciar una sesión sin
-escribir el comando completo. Descárgalo desde el repositorio y colócalo en la
-misma carpeta que `password-vault-1.1.0.jar`. Abre `vault.cmd` y edita la línea
-`VAULT_PATH` para indicar la ruta absoluta de tu bóveda; por ejemplo:
+El Release `v1.1.0` incluye [`vault.cmd`](vault.cmd). Descarga los tres assets en
+una carpeta de aplicación y mantenlos juntos: `password-vault-1.1.0.jar`,
+`vault.cmd` y `password-vault-1.1.0.jar.sha256`. Necesitas Java 21 o posterior
+disponible como `java` en `PATH`.
 
-```bat
-set "VAULT_PATH=C:\Users\tu-usuario\Documents\mi-boveda.pvlt"
-```
+#### Primera configuración
 
-Si aún no tienes una bóveda, créala primero desde una terminal interactiva con
-el comando `create` descrito abajo. Después puedes abrir `vault.cmd` con doble
-clic; el lanzador ejecuta `session` sobre esa ruta y usa el autobloqueo
-predeterminado de cinco minutos. Escribe `exit` para cerrar la sesión. La ventana
-queda abierta al terminar para que puedas leer el resultado; pulsa una tecla para
-cerrarla.
+1. Decide dónde guardar la bóveda. La ruta debe señalar **el archivo de bóveda**
+   (por ejemplo, `E:\PasswordVault\mi-boveda.pvlt`), no solo la carpeta
+   `E:\PasswordVault`.
+2. Si la carpeta aún no existe, créala en PowerShell:
 
-Necesitas Java 21 o posterior disponible como `java` en `PATH`. Si aparece un
-mensaje de Java no disponible, instala/configura Java; si falta el JAR, vuelve a
-colocarlo junto al lanzador. El script no crea ni selecciona automáticamente una
-bóveda. No escribas contraseñas ni otros secretos en `vault.cmd`, argumentos o
-variables de entorno: la CLI los solicita directamente en la consola.
+   ```powershell
+   New-Item -ItemType Directory -Force 'E:\PasswordVault' | Out-Null
+   ```
+
+3. Si ya tienes un archivo `.pvlt`, conserva una copia y usa su ruta exacta en el
+   paso siguiente. **No ejecutes `create` sobre una bóveda existente.** Si aún no
+   tienes una, abre PowerShell en la carpeta donde están los archivos y créala
+   una sola vez:
+
+   ```powershell
+   java -jar .\password-vault-1.1.0.jar create --vault 'E:\PasswordVault\mi-boveda.pvlt'
+   ```
+
+   La CLI pedirá la contraseña maestra y su confirmación sin mostrarlas en
+   pantalla. No escribas la contraseña como parte del comando.
+4. Haz clic derecho en `vault.cmd` y elige **Editar**. Cambia el marcador de
+   `VAULT_PATH` por la ruta completa del archivo, entre comillas:
+
+   ```bat
+   set "VAULT_PATH=E:\PasswordVault\mi-boveda.pvlt"
+   ```
+
+   Guarda el archivo. No pongas aquí la contraseña maestra.
+5. Haz doble clic en `vault.cmd` e introduce la contraseña maestra que usaste al
+   crear esa bóveda. El lanzador abre `session` directamente y aplica el
+   autobloqueo predeterminado de cinco minutos. Escribe `exit` para cerrar la
+   sesión; pulsa una tecla para cerrar la ventana cuando termine.
+
+Si aparece **«No se pudo abrir la bóveda»**, comprueba que `VAULT_PATH` apunta al
+archivo `.pvlt` correcto (no a una carpeta) y vuelve a introducir la contraseña
+maestra elegida al crearlo. No borres ni vuelvas a crear encima de un archivo
+existente.
+
+#### Ver una contraseña guardada
+
+Dentro de la sesión del lanzador:
+
+1. Escribe `list` para mostrar los IDs, servicios y usuarios guardados.
+2. Escribe `show --id <id>` usando el ID de la entrada que necesitas.
+3. Cuando pregunte **«¿Revelar la contraseña?»**, escribe `sí` para mostrarla en
+   la consola. Cualquier otra respuesta no la revela.
+
+La contraseña se muestra en pantalla: evita capturas y no la compartas. También
+puedes escribir `help` para consultar los comandos disponibles. No ejecutes estos
+comandos mediante pipes ni redirecciones; la CLI necesita una terminal
+interactiva real y solicita los secretos directamente en ella.
 
 ## Comandos
 
