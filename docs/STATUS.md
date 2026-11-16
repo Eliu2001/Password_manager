@@ -1,6 +1,6 @@
 # Estado del proyecto — 2026-11-16
 
-## Spec 010 — Asistente y menú guiado de consola (en implementación)
+## Spec 010 — Asistente y menú guiado de consola (cerrada)
 
 - **Spec aprobada:** `docs/specs/010-guided-console-ux/spec.md`.
 - **Plan/tareas:** `docs/specs/010-guided-console-ux/plan.md` y `tasks.md`.
@@ -13,15 +13,20 @@
   actualizado. Las confirmaciones exactas aceptan `sí` o `si`, sin espacios ni
   variantes de mayúsculas.
 - **Verificación local del rediseño:** `./mvnw.cmd verify` — **BUILD SUCCESS**,
-  137 pruebas, 0 fallos, 0 errores y 1 omitida por symlink no disponible en
+  143 pruebas, 0 fallos, 0 errores y 1 omitida por symlink no disponible en
   Windows. Spotless y `git diff --check` pasaron. El build reconstruyó el JAR;
-  no se hizo una validación manual del flujo con TTY ni del launcher ejecutado
-  desde una terminal real.
-- **Pendiente antes del cierre:** completar la matriz AC-1–AC-13 y las pruebas que
-  faltan para wizard/índices/timeout; validar creación/apertura y launcher en una
-  terminal real. El ancho se estima desde `COLUMNS` (80 por defecto), no se
-  detectan redimensionamientos en vivo. La antigüedad usa `updatedAt` como
-  aproximación, no como fecha exacta del cambio de contraseña.
+  el usuario confirma que probó la consola real y la presentación visual en
+  Windows. La prueba manual se registra como reportada por el usuario; no fue
+  reproducida independientemente por el agente. El ancho se estima desde
+  `COLUMNS` (80 por defecto), sin detectar redimensionamientos en vivo. La
+  antigüedad usa `updatedAt` como aproximación, no como fecha exacta del cambio de
+  contraseña.
+- **Cierre:** T01–T18 completadas; AC-1–AC-13 cubiertos según las pruebas y la
+  validación manual reportada. No se modificaron `docs/FORMAT.md` ni
+  `docs/THREAT_MODEL.md`.
+- **Distribución vigente:** `v1.1.0` está publicado y contiene la interfaz
+  anterior. El siguiente objetivo de distribución es `v1.2.0`; la preparación se
+  registra en la Spec 011.
 
 ## Spec cerrada
 
@@ -267,6 +272,31 @@
   0 errores y 1 omitida por symlink no disponible. El launcher actualizado
   confirmó en Windows el JAR 1.1.0 y argumentos con ruta sintética que contiene
   espacios. `git diff --check` pasó.
-- **Pendiente remoto:** no se hizo push, no se creó tag `v1.1.0` ni GitHub Release.
-  El usuario debe subir los cambios, crear el Release y adjuntar los tres assets;
-  la publicación remota sigue siendo manual.
+- **Publicación remota:** GitHub Release [`v1.1.0`](https://github.com/Eliu2001/Password_manager/releases/tag/v1.1.0)
+  publicado el 2026-11-16. El tag apunta a `d2069da`; incluye el JAR
+  `password-vault-1.1.0.jar`, `vault.cmd` y `password-vault-1.1.0.jar.sha256`.
+  El JAR publicado tiene SHA-256
+  `cd741c0e3cd0d8155fe46cc645bc209568a3a3db47552a0c3bada722b0c6c44b` y no
+  contiene la interfaz guiada de Spec 010.
+
+## Spec 011 — Preparación del Release 1.2.0 (cerrada localmente)
+
+- **Estado:** preparación local cerrada; GitHub Release pendiente. El usuario
+  autorizó el push de los cambios del repositorio, pero no la publicación del
+  Release ni la carga de assets.
+- **Spec/plan/tareas:** `docs/specs/011-release-1.2.0/`.
+- **Objetivo:** `1.2.0`, con interfaz guiada; `v1.1.0` permanece como última
+  versión publicada hasta que el usuario publique manualmente la nueva.
+- **Verificación:** `./mvnw.cmd verify` — BUILD SUCCESS, 143 pruebas, 0 fallos,
+  0 errores y 1 omitida por symlink no disponible en Windows. `git diff --check`
+  pasó. `java -jar target/password-vault.jar --help` mostró el comando `start`.
+- **Staging:** `C:\Users\villa\Downloads\password-vault-v1.2.0-release`; contiene
+  exactamente `password-vault-1.2.0.jar` (6,771,889 bytes), `vault.cmd` (591
+  bytes) y `password-vault-1.2.0.jar.sha256` (64 caracteres hexadecimales).
+- **SHA-256 del JAR staged:**
+  `c4bb0a28ab426c4ba1b29d1c6641f80c42d8fcd9026802c7a8689239a2fbc341`; se
+  recalculó sobre la copia staged y coincidió. El JAR staged ejecuta `--help`
+  con estado 0 y muestra el comando `start`.
+- **Pendiente remoto:** no se creó tag `v1.2.0`, no se publicó GitHub Release y
+  no se subieron assets. El commit local se enviará a `origin/main` con la
+  autorización expresa del usuario.

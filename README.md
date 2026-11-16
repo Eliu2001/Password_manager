@@ -2,7 +2,8 @@
 
 Password Vault es un gestor local de credenciales cifradas. La bóveda se guarda
 en un archivo local y la CLI solicita contraseñas y otros secretos mediante una
-terminal interactiva. La versión actual de distribución es la **1.1.0**.
+terminal interactiva. La última versión publicada es la **1.1.0**; sus assets no
+incluyen el asistente y menú guiados que están en el código fuente actual.
 
 ## Requisitos
 
@@ -47,14 +48,31 @@ java -jar password-vault-1.1.0.jar --help
 
 ### Lanzador sencillo para Windows
 
-El Release `v1.1.0` incluye [`vault.cmd`](vault.cmd). Para probar el asistente
-guiado descrito abajo, usa el `vault.cmd` y el JAR construidos desde esta revisión;
-los assets ya publicados de `v1.1.0` no incluyen esta nueva interfaz. Necesitas
-Java 21 o posterior disponible como `java` en `PATH`.
+El [`vault.cmd`](vault.cmd) adjunto al Release `v1.1.0` corresponde a la interfaz
+anterior: abre una sesión mediante una ruta configurada y no presenta el asistente
+guiado. No combines ese launcher/JAR con archivos de otra revisión.
+
+El flujo guiado disponible en el código fuente aún no está incluido en un Release.
+Para probarlo con Java 21 desde Windows PowerShell, clona el repositorio y ejecuta
+desde su raíz:
+
+```powershell
+.\mvnw.cmd -q compile exec:java '-Dexec.args=start'
+```
+
+En Linux/macOS:
+
+```sh
+./mvnw -q compile exec:java -Dexec.args="start"
+```
+
+Usa una terminal interactiva real; no pipes ni redirecciones. El flujo guiado
+recuerda solo la ruta en `%LOCALAPPDATA%\PasswordVault\vault-path.txt`.
 
 #### Primera configuración
 
-1. Ejecuta `vault.cmd` en una terminal interactiva.
+1. Ejecuta el comando `start` anterior para probar la versión guiada desde el
+   código fuente. El launcher descargable de `v1.1.0` usa el flujo anterior.
 2. Elige **Crear bóveda nueva** o **Abrir bóveda existente** y escribe la ruta
    completa del archivo `.pvlt` (no solo una carpeta). Para crearla, el directorio
    padre ya debe existir y el destino no debe existir.
@@ -160,27 +178,17 @@ licencia de Bouncy Castle. El texto de licencia se conserva dentro del JAR en
 `META-INF/LICENSE.md`. JUnit 5 se usa únicamente para pruebas y no se incluye en
 el artefacto distribuido.
 
-## Publicación de la versión 1.1.0
+## Estado de distribución
 
-La publicación es manual: crea el tag `v1.1.0` y el GitHub Release correspondiente.
-Ejecuta `./mvnw.cmd verify` (Windows) o `./mvnw verify` (POSIX), copia
-`target/password-vault.jar` como `password-vault-1.1.0.jar` y copia el `vault.cmd`
-genérico sin cambiar el marcador `VAULT_PATH`. Adjunta los tres archivos juntos:
-el JAR, `vault.cmd` y el checksum `password-vault-1.1.0.jar.sha256`. Calcula el
-hash después de copiar/renombrar el JAR. En PowerShell:
+- **Publicado:** `v1.1.0` es la última versión descargable y contiene la CLI
+  anterior; sus tres assets están en el [GitHub Release](https://github.com/Eliu2001/Password_manager/releases/tag/v1.1.0).
+- **Flujo guiado:** está disponible desde el código fuente con `start`; no forma
+  parte de los assets publicados de `v1.1.0`.
+- **Candidato:** `v1.2.0` incorpora el flujo guiado y está en preparación local.
+  Hasta que se publique su Release, `v1.1.0` sigue siendo la única descarga
+  publicada. No combines assets de versiones distintas.
 
-```powershell
-(Get-FileHash .\password-vault-1.1.0.jar -Algorithm SHA256).Hash.ToLowerInvariant() |
-  Set-Content .\password-vault-1.1.0.jar.sha256 -NoNewline
-```
-
-En Linux/POSIX:
-
-```sh
-sha256sum password-vault-1.1.0.jar | cut -d ' ' -f 1 > password-vault-1.1.0.jar.sha256
-```
-
-Antes de publicar, comprueba el checksum con los comandos de descarga descritos
-arriba. No hay publicación automática desde tags; tampoco se distribuyen
-instaladores nativos ni un runtime Java. El `.cmd` contiene una ruta de ejemplo:
-edita `VAULT_PATH` después de descargarlo, no antes de adjuntarlo al Release.
+La publicación es manual. El paquete candidato `v1.2.0` se prepara con el JAR
+versionado, `vault.cmd` y el checksum SHA-256 del JAR. El checksum verifica
+coincidencia de bytes, no es una firma digital. No se incluyen instalador nativo
+ni runtime Java.

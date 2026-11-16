@@ -34,7 +34,7 @@ spec.
   PowerShell indexa `.Target[0]` en directorio `.m2` normal; se invocó la
   distribución Maven 3.10.0 ya instalada sin modificar el wrapper.
 
-- [ ] **T03 — Implementar asistente de selección de bóveda** (25 min)\
+- [x] **T03 — Implementar asistente de selección de bóveda** (25 min)\
   **RF:** RF-1, RF-2, RF-8 · **AC:** AC-1, AC-2, AC-8\
   **Hecho cuando:** entrada sin config/ruta ausente ofrece Crear/Abrir/Salir,
   pide ruta absoluta de archivo, rechaza directorios/archivo existente para Create,
@@ -44,7 +44,7 @@ spec.
   relativo, padre ausente, directorio, destino existente, consola no disponible y
   cero llamadas de Storage ante selección inválida.
 
-- [ ] **T04 — Integrar autenticación, configuración y ownership de sesión** (25 min)\
+- [x] **T04 — Integrar autenticación, configuración y ownership de sesión** (25 min)\
   **RF:** RF-2, RF-3, RF-8 · **AC:** AC-2, AC-3, AC-8\
   **Hecho cuando:** guardar ruta solo tras create/open exitoso; crear reutiliza el
   `VaultSession` devuelto por Storage sin prompt de contraseña adicional; abrir
@@ -56,7 +56,7 @@ spec.
 
 ## Runner y menú guiado
 
-- [ ] **T05 — Añadir entrada `start` y modo de sesión guiada** (25 min)\
+- [x] **T05 — Añadir entrada `start` y modo de sesión guiada** (25 min)\
   **RF:** RF-4, RF-8 · **AC:** AC-4, AC-8\
   **Hecho cuando:** `CliApplication`/`Main` exponen `start` para launcher; un
   `CliSessionRunner` puede adoptar una sesión ya autenticada, conservar timeout,
@@ -65,7 +65,7 @@ spec.
   **Evidencia:** pruebas de transferencia ownership, exit, EOF, error y auto-lock;
   tests previos de sesión siguen pasando.
 
-- [ ] **T06 — Construir menú textual y navegación segura** (25 min)\
+- [x] **T06 — Construir menú textual y navegación segura** (25 min)\
   **RF:** RF-4, RF-7 · **AC:** AC-4, AC-7\
   **Hecho cuando:** menú en español enumera operaciones existentes y acepta
   opciones numéricas, ayuda/salir; entrada vacía/incorrecta no despacha acción,
@@ -74,7 +74,7 @@ spec.
   **Evidencia:** pruebas de tabla de opciones, invalid input, EOF, cancelación y
   retorno al menú con consola sustituible.
 
-- [ ] **T07 — Añadir listados indexados y selección efímera** (25 min)\
+- [x] **T07 — Añadir listados indexados y selección efímera** (25 min)\
   **RF:** RF-5 · **AC:** AC-5, AC-7, AC-9\
   **Hecho cuando:** listados muestran desde 1 posición, servicio y usuario, sin
   UUID, contraseña, notas o TOTP. Índice se resuelve contra la instantánea actual;
@@ -83,7 +83,7 @@ spec.
   **Evidencia:** pruebas con UUIDs sintéticos para primer/último/índice fuera de
   rango, lista vacía, orden, adición/borrado y verificación del UUID destino/save.
 
-- [ ] **T08 — Implementar búsqueda parcial y elección de resultados** (25 min)\
+- [x] **T08 — Implementar búsqueda parcial y elección de resultados** (25 min)\
   **RF:** RF-6 · **AC:** AC-5, AC-6\
   **Hecho cuando:** búsqueda `Locale.ROOT`, parcial, sin normalización Unicode y
   limitada a servicio; cero resultados informa, uno exige confirmación de acción,
@@ -93,7 +93,7 @@ spec.
 
 ## Operaciones, seguridad y compatibilidad
 
-- [ ] **T09 — Adaptar CRUD y salida para modo guiado** (25 min)\
+- [x] **T09 — Adaptar CRUD y salida para modo guiado** (25 min)\
   **RF:** RF-4, RF-5, RF-7 · **AC:** AC-4, AC-5, AC-7\
   **Hecho cuando:** add/show/delete usan ID resuelto en memoria; modo guiado no
   obliga a copiar ni imprime IDs largos. `show` requiere `sí`, `delete` conserva
@@ -102,7 +102,7 @@ spec.
   **Evidencia:** tests de secreto solo por `printSecret`, confirmación exacta,
   cancel/save, ruta de entrada y diferencias de salida legacy/guided.
 
-- [ ] **T10 — Integrar TOTP, upgrade y generador en el menú** (25 min)\
+- [x] **T10 — Integrar TOTP, upgrade y generador en el menú** (25 min)\
   **RF:** RF-4, RF-7 · **AC:** AC-4, AC-7\
   **Hecho cuando:** todas las funciones avanzadas del alcance son accesibles con
   selección por posición; flujos TOTP/upgrade conservan confirmaciones, formato y
@@ -110,7 +110,7 @@ spec.
   **Evidencia:** pruebas guiadas de no-TOTP/v1, confirmaciones, cancelación,
   secreción de código, upgrade y salida de generador; limpiar buffers controlables.
 
-- [ ] **T11 — Revisar regresiones y archivos v1/v2** (25 min)\
+- [x] **T11 — Revisar regresiones y archivos v1/v2** (25 min)\
   **RF:** RF-8, RF-9 · **AC:** AC-8, AC-9\
   **Hecho cuando:** comandos one-shot/`session`, parser de IDs largos y formatos
   v1/v2 se mantienen; sin nuevas dependencias, cambios de codec ni Threat Model.
@@ -120,7 +120,7 @@ spec.
 
 ## Launcher, documentación y cierre
 
-- [ ] **T12 — Conectar `vault.cmd` al asistente** (20 min)\
+- [x] **T12 — Conectar `vault.cmd` al asistente** (20 min)\
   **RF:** RF-8 · **AC:** AC-1, AC-8, AC-10\
   **Hecho cuando:** launcher invoca `start` en el JAR junto a él, sin `VAULT_PATH`
   hardcoded; conserva comprobaciones de Java/JAR, passthrough de consola, pausa y
@@ -144,7 +144,7 @@ spec.
   no. No se agregan dependencias ni se colorean secretos/errores.\
   **Evidencia:** pruebas de tema forzado con/sin color, título, crédito, opciones y
   ausencia de códigos ANSI en fallback; detección Warp y precedencia `NO_COLOR`.
-  `ConsoleThemeTest`: 3 pruebas pasan.
+  `ConsoleThemeTest`: 5 pruebas pasan.
 
 - [x] **T15 — Permitir actualizar la contraseña de una entrada** (25 min)\
   **RF:** RF-11 · **AC:** AC-12\
@@ -175,7 +175,7 @@ spec.
   mutación. `GuidedVaultMenuTest` verifica la antigüedad en el listado y que no se
   guarda de nuevo.
 
-- [ ] **T18 — Verificación integral, plataforma y cierre** (25 min)\
+- [x] **T18 — Verificación integral, plataforma y cierre** (25 min)\
   **RF:** RF-1–RF-12 · **AC:** AC-1–AC-13\
   **Hecho cuando:** `./mvnw.cmd verify` y `git diff --check` pasan; prueba Windows
   de config/launcher y suite automatizada cubren todos los AC. Se registra TTY/ACL
@@ -188,3 +188,11 @@ spec.
 Cerrar Spec 010 solo al completar T01–T18 con evidencia y cubrir AC-1–AC-13. No
 incluir push, publicación, GUI nativa, portapapeles o cambio del formato como
 requisitos implícitos.
+
+**Resultado T18 — 2026-11-16:** `./mvnw.cmd verify` pasó con 143 pruebas, 0
+fallos, 0 errores y 1 omitida por symlink no disponible en Windows;
+`git diff --check` pasó. Se añadieron pruebas automatizadas de crear/abrir/cancelar
+el asistente, transferencia de sesión, selección por índice, búsqueda con varias
+coincidencias e inactividad del menú guiado. El usuario confirma que probó la
+consola real y su presentación visual en Windows; esta validación manual se
+registra como reportada por el usuario, no reproducida por el agente.

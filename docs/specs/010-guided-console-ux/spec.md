@@ -1,6 +1,6 @@
 # Spec 010 — Asistente y menú guiado de consola
 
-**Estado:** aprobada por el usuario el 2026-11-15; implementación autorizada tras plan y tareas.
+**Estado:** cerrada el 2026-11-16; AC-1–AC-13 cubiertos; verificación y prueba manual reportada registradas en `docs/STATUS.md`.
 **Predecesoras:** Specs 003 (`cli-mvp`), 005 (`totp`), 006 (`auto-lock`) y 008 (`windows-launcher`), cerradas.
 
 El 2026-11-16 se autorizó aceptar `sí` o `si` exactos en las confirmaciones

@@ -133,6 +133,49 @@ class CliSessionRunnerTest {
   }
 
   @Test
+  void guidedMenuLocksOnTimeoutDiscardsPendingInputAndReauthenticates() throws Exception {
+    VaultStorage storage = new VaultStorage();
+    Path vault = directory.resolve("guided-timeout.pvlt");
+    char[] master = "synthetic-master".toCharArray();
+    try (VaultSession ignored = storage.create(vault, master)) {
+      Arrays.fill(master, '\0');
+    }
+
+    ScriptedConsole console = new ScriptedConsole();
+    console.passwords.add("synthetic-master".toCharArray());
+    console.lines.add(TimedLineResult.timedOut());
+    console.lines.add(TimedLineResult.line("0"));
+    console.onDiscard =
+        () -> {
+          char[] password = "synthetic-master".toCharArray();
+          try (VaultSession ignored = storage.open(vault, password)) {
+            console.vaultWasClosedBeforeDiscard = true;
+          } catch (IOException | cl.germain.vault.crypto.DecryptionException exception) {
+            throw new AssertionError("Vault lock remained held while discarding input", exception);
+          } finally {
+            Arrays.fill(password, '\0');
+          }
+        };
+    VaultCliCommands commands = new VaultCliCommands(console, storage, new PasswordGenerator());
+    CliSessionRunner runner =
+        new CliSessionRunner(
+            console, storage, commands, new CliArgumentParser(), () -> console.ticks++);
+    char[] initialPassword = "synthetic-master".toCharArray();
+    VaultSession authenticated = storage.open(vault, initialPassword);
+    Arrays.fill(initialPassword, '\0');
+
+    assertEquals(
+        CliExitStatus.SUCCESS, runner.runGuided(new CliSessionRequest(vault, 1), authenticated));
+
+    assertTrue(console.vaultWasClosedBeforeDiscard);
+    assertEquals(1, console.discardCalls);
+    assertEquals(1, console.passwordPrompts);
+    assertTrue(console.output.stream().anyMatch(line -> line.contains("PASSWORD VAULT")));
+    assertTrue(console.output.stream().anyMatch(line -> line.contains("bloqueada")));
+    assertTrue(console.closed);
+  }
+
+  @Test
   void existingTotpCommandsReuseSessionAndKeepVaultContentPrivate() throws Exception {
     VaultStorage storage = new VaultStorage();
     Path vault = directory.resolve("totp-session.pvlt");
