@@ -1,6 +1,6 @@
 # Spec 012 — Navegación recuperable y visualización etiquetada de contraseñas
 
-**Estado:** propuesta para aprobación del usuario; no autoriza implementación.
+**Estado:** aprobada por el usuario el 2026-11-16; plan y tareas preparados. Implementación pendiente de autorización explícita.
 **Predecesoras:** Spec 010 (`guided-console-ux`) y Spec 011 (`release-1.2.0`), cerradas.
 
 ## 1. Objetivo

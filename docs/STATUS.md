@@ -27,6 +27,15 @@
 - **Distribución vigente:** `v1.2.0` está publicado e incluye la interfaz guiada;
   `v1.1.0` permanece como versión histórica con la CLI anterior.
 
+## Spec 012 — Navegación recuperable y contraseña etiquetada (planificada)
+
+- **Estado:** spec aprobada el 2026-11-16; plan y tareas preparados. La
+  implementación aún no está autorizada.
+- **Documentos:** `docs/specs/012-guided-navigation-and-secret-display/`.
+- **Alcance:** reintentar opciones inválidas, ofrecer volver/cancelar en pantallas
+  secundarias y etiquetar la contraseña revelada, conservando el canal privado y
+  el manejo `char[]`.
+
 ## Spec cerrada
 
 - **Spec:** `docs/specs/001-crypto-core/spec.md` — Spec 001, `crypto-core`.
